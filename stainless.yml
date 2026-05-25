@@ -1,0 +1,61 @@
+# stainful configuration for Hyver SDK generation
+# https://github.com/stainlu/stainful
+
+organization:
+  name: hyver-sdk
+  docs: https://github.com/DressPD/hyver-sdk
+
+resources:
+  health:
+    methods:
+      check: get /health
+
+  capabilities:
+    methods:
+      get: get /v1/capabilities
+
+  chat.completions:
+    methods:
+      create:
+        endpoint: post /v1/chat/completions
+        streaming:
+          type: sse
+          param_discriminator: stream
+          stream_event_model: ChatCompletionChunk
+
+  runs:
+    methods:
+      create: post /v1/runs
+      stop: post /v1/runs/{run_id}/stop
+
+  runs.events:
+    methods:
+      stream:
+        endpoint: get /v1/runs/{run_id}/events
+        streaming:
+          type: sse
+          stream_event_model: RunEvent
+
+  runs.approval:
+    methods:
+      submit: post /v1/runs/{run_id}/approval
+
+targets:
+  python:
+    package_name: hermes
+    publish:
+      pypi: false
+
+settings:
+  license: MIT
+
+client_settings:
+  opts:
+    bearer_token:
+      type: string
+      auth:
+        security_scheme: BearerAuth
+      read_env: HERMES_API_KEY
+  environments:
+    production: https://hermes.your-domain.com
+    local: http://localhost:8643
