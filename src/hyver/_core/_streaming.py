@@ -86,13 +86,6 @@ class Stream(Generic[_T]):
         self._client = client
         self._decoder = _SSEDecoder()
 
-    @staticmethod
-    def _normalize_event_data(data: object) -> object:
-        """Hermes sends discriminator as 'event'; Pydantic models use 'type'."""
-        if isinstance(data, dict) and "event" in data and "type" not in data:
-            data["type"] = data.pop("event")
-        return data
-
     def __iter__(self) -> Iterator[_T]:
         try:
             for line in self._response.iter_lines():
@@ -118,6 +111,13 @@ class Stream(Generic[_T]):
 
     def close(self) -> None:
         self._response.close()
+
+    @staticmethod
+    def _normalize_event_data(data: object) -> object:
+        """Server sends discriminator as 'event'; Pydantic models use 'type'."""
+        if isinstance(data, dict) and "event" in data and "type" not in data:
+            data["type"] = data.pop("event")
+        return data
 
     def __enter__(self) -> Stream[_T]:
         return self

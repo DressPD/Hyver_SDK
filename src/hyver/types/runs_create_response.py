@@ -23,4 +23,3 @@ class RunCreateResponse(BaseModel):
         if self.run_id is None and self.id is not None:
             self.run_id = self.id
         return self
-

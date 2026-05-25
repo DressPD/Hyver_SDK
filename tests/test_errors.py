@@ -4,8 +4,8 @@ import httpx
 import pytest
 import respx
 
-from hermes import HermesSDK
-from hermes._core._exceptions import (
+from hyver import HyverSDK
+from hyver._core._exceptions import (
     APIError,
     APIStatusError,
     AuthenticationError,
@@ -41,7 +41,7 @@ class TestErrorMapping:
         self,
         status: int,
         exc_cls: type,
-        client: HermesSDK,
+        client: HyverSDK,
         base_url: str,
     ) -> None:
         respx.get(f"{base_url}/health").mock(return_value=httpx.Response(status, json={"error": {"message": "fail"}}))
@@ -49,7 +49,7 @@ class TestErrorMapping:
             client.health.check()
 
     @respx.mock
-    def test_error_has_status_code(self, client: HermesSDK, base_url: str) -> None:
+    def test_error_has_status_code(self, client: HyverSDK, base_url: str) -> None:
         respx.get(f"{base_url}/health").mock(
             return_value=httpx.Response(401, json={"error": {"message": "Unauthorized"}})
         )
@@ -58,7 +58,7 @@ class TestErrorMapping:
         assert exc_info.value.status_code == 401
 
     @respx.mock
-    def test_error_has_response_object(self, client: HermesSDK, base_url: str) -> None:
+    def test_error_has_response_object(self, client: HyverSDK, base_url: str) -> None:
         respx.get(f"{base_url}/health").mock(return_value=httpx.Response(404, json={"error": {"message": "Not found"}}))
         with pytest.raises(APIStatusError) as exc_info:
             client.health.check()
@@ -66,7 +66,7 @@ class TestErrorMapping:
         assert exc_info.value.response.status_code == 404
 
     @respx.mock
-    def test_error_body_parsed(self, client: HermesSDK, base_url: str) -> None:
+    def test_error_body_parsed(self, client: HyverSDK, base_url: str) -> None:
         error_body = {"error": {"message": "Bad input", "type": "invalid_request", "code": "bad_param"}}
         respx.get(f"{base_url}/health").mock(return_value=httpx.Response(400, json=error_body))
         with pytest.raises(BadRequestError) as exc_info:

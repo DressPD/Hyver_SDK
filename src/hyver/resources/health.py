@@ -7,17 +7,17 @@ from functools import cached_property
 
 import httpx
 
-from hermes._core._request_options import make_request_options
-from hermes._core._resource import AsyncAPIResource, SyncAPIResource
-from hermes._core._response import (
+from hyver._core._request_options import make_request_options
+from hyver._core._resource import AsyncAPIResource, SyncAPIResource
+from hyver._core._response import (
     async_to_raw_response_wrapper,
     async_to_streamed_response_wrapper,
     to_raw_response_wrapper,
     to_streamed_response_wrapper,
 )
-from hermes._core._sentinels import NotGiven, not_given
-from hermes._core._types import Body, FileTypes, Headers, Query  # noqa: F401
-from hermes.types import HealthCheckResponse
+from hyver._core._sentinels import NotGiven, not_given
+from hyver._core._types import Body, FileTypes, Headers, Query  # noqa: F401
+from hyver.types import HealthCheckResponse
 
 __all__ = ["HealthResource", "AsyncHealthResource"]
 

@@ -9,12 +9,12 @@ from ._core._base_client import AsyncAPIClient, SyncAPIClient
 from ._core._sentinels import NotGiven, not_given
 from . import resources
 
-__all__ = ["HermesSDK", "AsyncHermesSDK"]
+__all__ = ["HyverSDK", "AsyncHyverSDK"]
 
 _DEFAULT_BASE_URL = "http://localhost:8643"
 
 
-class HermesSDK(SyncAPIClient):
+class HyverSDK(SyncAPIClient):
     health: resources.HealthResource
     capabilities: resources.CapabilitiesResource
     chat_completions: resources.ChatCompletionsResource
@@ -32,14 +32,14 @@ class HermesSDK(SyncAPIClient):
         http_client: httpx.Client | None = None,
     ) -> None:
         if api_key is None:
-            api_key = os.environ.get("HERMES_API_KEY")
+            api_key = os.environ.get("HYVER_API_KEY")
         if api_key is None:
             raise ValueError(
                 "The api_key client option must be set either by passing api_key "
-                "to the client or by setting the HERMES_API_KEY environment variable"
+                "to the client or by setting the HYVER_API_KEY environment variable"
             )
         super().__init__(
-            base_url=base_url or os.environ.get("HERMES_BASE_URL") or _DEFAULT_BASE_URL,
+            base_url=base_url or os.environ.get("HYVER_BASE_URL") or _DEFAULT_BASE_URL,
             timeout=timeout,
             max_retries=max_retries,
             http_client=http_client,
@@ -53,7 +53,7 @@ class HermesSDK(SyncAPIClient):
         self.runs_approval = resources.RunsApprovalResource(self)
 
 
-class AsyncHermesSDK(AsyncAPIClient):
+class AsyncHyverSDK(AsyncAPIClient):
     health: resources.AsyncHealthResource
     capabilities: resources.AsyncCapabilitiesResource
     chat_completions: resources.AsyncChatCompletionsResource
@@ -71,14 +71,14 @@ class AsyncHermesSDK(AsyncAPIClient):
         http_client: httpx.AsyncClient | None = None,
     ) -> None:
         if api_key is None:
-            api_key = os.environ.get("HERMES_API_KEY")
+            api_key = os.environ.get("HYVER_API_KEY")
         if api_key is None:
             raise ValueError(
                 "The api_key client option must be set either by passing api_key "
-                "to the client or by setting the HERMES_API_KEY environment variable"
+                "to the client or by setting the HYVER_API_KEY environment variable"
             )
         super().__init__(
-            base_url=base_url or os.environ.get("HERMES_BASE_URL") or _DEFAULT_BASE_URL,
+            base_url=base_url or os.environ.get("HYVER_BASE_URL") or _DEFAULT_BASE_URL,
             timeout=timeout,
             max_retries=max_retries,
             http_client=http_client,

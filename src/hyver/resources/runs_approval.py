@@ -8,17 +8,17 @@ from urllib.parse import quote
 
 import httpx
 
-from hermes._core._request_options import make_request_options
-from hermes._core._resource import AsyncAPIResource, SyncAPIResource
-from hermes._core._response import (
+from hyver._core._request_options import make_request_options
+from hyver._core._resource import AsyncAPIResource, SyncAPIResource
+from hyver._core._response import (
     async_to_raw_response_wrapper,
     async_to_streamed_response_wrapper,
     to_raw_response_wrapper,
     to_streamed_response_wrapper,
 )
-from hermes._core._sentinels import NotGiven, not_given
-from hermes._core._types import Body, FileTypes, Headers, Query  # noqa: F401
-from hermes._core._models import to_jsonable
+from hyver._core._sentinels import NotGiven, not_given
+from hyver._core._types import Body, FileTypes, Headers, Query  # noqa: F401
+from hyver._core._models import to_jsonable
 
 __all__ = ["RunsApprovalResource", "AsyncRunsApprovalResource"]
 
@@ -87,7 +87,7 @@ human-in-the-loop control enabled."""
         }
         _body = {k: v for k, v in _body.items() if v is not not_given}
         return await self._post(
-            f"/v1/runs/{quote(run_id, safe='')}/approval",
+            f"/v1/runs/{run_id}/approval",
             body=to_jsonable(_body),
             options=make_request_options(
                 extra_headers=extra_headers,

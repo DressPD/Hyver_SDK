@@ -8,19 +8,19 @@ from typing import List, Literal, Union, overload
 
 import httpx
 
-from hermes._core._request_options import make_request_options
-from hermes._core._resource import AsyncAPIResource, SyncAPIResource
-from hermes._core._response import (
+from hyver._core._request_options import make_request_options
+from hyver._core._resource import AsyncAPIResource, SyncAPIResource
+from hyver._core._response import (
     async_to_raw_response_wrapper,
     async_to_streamed_response_wrapper,
     to_raw_response_wrapper,
     to_streamed_response_wrapper,
 )
-from hermes._core._sentinels import NotGiven, not_given
-from hermes._core._types import Body, FileTypes, Headers, Query  # noqa: F401
-from hermes._core._streaming import AsyncStream, Stream
-from hermes._core._models import to_jsonable
-from hermes.types import ChatCompletionCreateEvent, ChatCompletionCreateParamsMessages, ChatCompletionCreateResponse
+from hyver._core._sentinels import NotGiven, not_given
+from hyver._core._types import Body, FileTypes, Headers, Query  # noqa: F401
+from hyver._core._streaming import AsyncStream, Stream
+from hyver._core._models import to_jsonable
+from hyver.types import ChatCompletionCreateEvent, ChatCompletionCreateParamsMessages, ChatCompletionCreateResponse
 
 __all__ = ["ChatCompletionsResource", "AsyncChatCompletionsResource"]
 

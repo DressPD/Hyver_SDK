@@ -1,10 +1,10 @@
-"""Shared test fixtures for Hermes SDK tests."""
+"""Shared test fixtures for Hyver SDK tests."""
 
 from collections.abc import AsyncGenerator, Generator
 
 import pytest
 
-from hermes import AsyncHermesSDK, HermesSDK
+from hyver import AsyncHyverSDK, HyverSDK
 
 
 @pytest.fixture
@@ -18,16 +18,16 @@ def api_key() -> str:
 
 
 @pytest.fixture
-def client(base_url: str, api_key: str) -> Generator[HermesSDK, None, None]:
-    """Create a HermesSDK client with test credentials."""
-    c = HermesSDK(api_key=api_key, base_url=base_url, max_retries=0)
+def client(base_url: str, api_key: str) -> Generator[HyverSDK, None, None]:
+    """Create a HyverSDK client with test credentials."""
+    c = HyverSDK(api_key=api_key, base_url=base_url, max_retries=0)
     yield c
     c.close()
 
 
 @pytest.fixture
-async def async_client(base_url: str, api_key: str) -> AsyncGenerator[AsyncHermesSDK, None]:
-    """Create an AsyncHermesSDK client with test credentials."""
-    c = AsyncHermesSDK(api_key=api_key, base_url=base_url, max_retries=0)
+async def async_client(base_url: str, api_key: str) -> AsyncGenerator[AsyncHyverSDK, None]:
+    """Create an AsyncHyverSDK client with test credentials."""
+    c = AsyncHyverSDK(api_key=api_key, base_url=base_url, max_retries=0)
     yield c
     await c.aclose()

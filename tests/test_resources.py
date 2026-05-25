@@ -1,4 +1,4 @@
-"""Tests for all Hermes SDK resource endpoints."""
+"""Tests for all Hyver SDK resource endpoints."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ import json
 import httpx
 import respx
 
-from hermes import HermesSDK
-from hermes.types import (
+from hyver import HyverSDK
+from hyver.types import (
     ChatCompletionCreateParamsMessages,
     ChatCompletionCreateResponse,
     HealthCheckResponse,
@@ -23,14 +23,14 @@ class TestHealthResource:
     """GET /health"""
 
     @respx.mock
-    def test_health_check(self, client: HermesSDK, base_url: str) -> None:
+    def test_health_check(self, client: HyverSDK, base_url: str) -> None:
         respx.get(f"{base_url}/health").mock(return_value=httpx.Response(200, json={"status": "healthy"}))
         result = client.health.check()
         assert isinstance(result, HealthCheckResponse)
         assert result.status == "healthy"
 
     @respx.mock
-    def test_health_sends_auth_header(self, client: HermesSDK, base_url: str, api_key: str) -> None:
+    def test_health_sends_auth_header(self, client: HyverSDK, base_url: str, api_key: str) -> None:
         route = respx.get(f"{base_url}/health").mock(return_value=httpx.Response(200, json={"status": "healthy"}))
         client.health.check()
         assert route.called
@@ -42,7 +42,7 @@ class TestCapabilitiesResource:
     """GET /v1/capabilities"""
 
     @respx.mock
-    def test_get_capabilities(self, client: HermesSDK, base_url: str) -> None:
+    def test_get_capabilities(self, client: HyverSDK, base_url: str) -> None:
         payload = {"models": ["claude-3"], "tools": ["brave"], "version": "1.0"}
         respx.get(f"{base_url}/v1/capabilities").mock(return_value=httpx.Response(200, json=payload))
         result = client.capabilities.get()
@@ -55,7 +55,7 @@ class TestChatCompletionsResource:
     """POST /v1/chat/completions"""
 
     @respx.mock
-    def test_create_non_streaming(self, client: HermesSDK, base_url: str) -> None:
+    def test_create_non_streaming(self, client: HyverSDK, base_url: str) -> None:
         payload = {
             "id": "chatcmpl-abc123",
             "object": "chat.completion",
@@ -84,7 +84,7 @@ class TestChatCompletionsResource:
         assert body["stream"] is False
 
     @respx.mock
-    def test_create_with_optional_params(self, client: HermesSDK, base_url: str) -> None:
+    def test_create_with_optional_params(self, client: HyverSDK, base_url: str) -> None:
         payload = {
             "id": "chatcmpl-xyz",
             "object": "chat.completion",
@@ -112,7 +112,7 @@ class TestRunsResource:
     """POST /v1/runs and POST /v1/runs/{run_id}/stop"""
 
     @respx.mock
-    def test_create_run_minimal(self, client: HermesSDK, base_url: str) -> None:
+    def test_create_run_minimal(self, client: HyverSDK, base_url: str) -> None:
         route = respx.post(f"{base_url}/v1/runs").mock(return_value=httpx.Response(200, json={"run_id": "run-abc123"}))
         result = client.runs.create(input="Hello agent", session_id="sess-001")
         assert isinstance(result, RunCreateResponse)
@@ -122,14 +122,14 @@ class TestRunsResource:
         assert body["session_id"] == "sess-001"
 
     @respx.mock
-    def test_create_run_with_id_field(self, client: HermesSDK, base_url: str) -> None:
+    def test_create_run_with_id_field(self, client: HyverSDK, base_url: str) -> None:
         """Backend may return 'id' instead of 'run_id'."""
         respx.post(f"{base_url}/v1/runs").mock(return_value=httpx.Response(200, json={"id": "run-xyz"}))
         result = client.runs.create(input="Test", session_id="sess-002")
         assert result.id == "run-xyz"
 
     @respx.mock
-    def test_create_run_full_params(self, client: HermesSDK, base_url: str) -> None:
+    def test_create_run_full_params(self, client: HyverSDK, base_url: str) -> None:
         route = respx.post(f"{base_url}/v1/runs").mock(return_value=httpx.Response(200, json={"run_id": "run-full"}))
         images = [RunCreateParamsImages(base64="abc=", mimeType="image/png")]  # type: ignore[call-arg]
         history = [
@@ -157,7 +157,7 @@ class TestRunsResource:
         assert body["tools"] == ["brave", "calculator"]
 
     @respx.mock
-    def test_stop_run(self, client: HermesSDK, base_url: str) -> None:
+    def test_stop_run(self, client: HyverSDK, base_url: str) -> None:
         route = respx.post(f"{base_url}/v1/runs/run-abc/stop").mock(return_value=httpx.Response(200, json={}))
         client.runs.stop(run_id="run-abc")
         assert route.called
@@ -168,7 +168,7 @@ class TestRunsApprovalResource:
     """POST /v1/runs/{run_id}/approval"""
 
     @respx.mock
-    def test_submit_approval(self, client: HermesSDK, base_url: str) -> None:
+    def test_submit_approval(self, client: HyverSDK, base_url: str) -> None:
         route = respx.post(f"{base_url}/v1/runs/run-xyz/approval").mock(return_value=httpx.Response(200, json={}))
         client.runs_approval.submit(run_id="run-xyz", approved=True)
         assert route.called
@@ -176,7 +176,7 @@ class TestRunsApprovalResource:
         assert body["approved"] is True
 
     @respx.mock
-    def test_reject_approval(self, client: HermesSDK, base_url: str) -> None:
+    def test_reject_approval(self, client: HyverSDK, base_url: str) -> None:
         route = respx.post(f"{base_url}/v1/runs/run-xyz/approval").mock(return_value=httpx.Response(200, json={}))
         client.runs_approval.submit(run_id="run-xyz", approved=False)
         body = json.loads(route.calls[0].request.content)
@@ -189,13 +189,13 @@ class TestRequestMetadata:
     @respx.mock
     def test_bearer_auth_header(self, base_url: str) -> None:
         route = respx.post(f"{base_url}/v1/runs").mock(return_value=httpx.Response(200, json={"run_id": "r1"}))
-        client = HermesSDK(api_key="my-jwt-token", base_url=base_url, max_retries=0)
+        client = HyverSDK(api_key="my-jwt-token", base_url=base_url, max_retries=0)
         client.runs.create(input="test", session_id="s1")
         assert route.calls[0].request.headers["authorization"] == "Bearer my-jwt-token"
 
     @respx.mock
     def test_url_construction(self, base_url: str) -> None:
         route = respx.get(f"{base_url}/v1/capabilities").mock(return_value=httpx.Response(200, json={}))
-        client = HermesSDK(api_key="test", base_url=base_url, max_retries=0)
+        client = HyverSDK(api_key="test", base_url=base_url, max_retries=0)
         client.capabilities.get()
         assert str(route.calls[0].request.url) == f"{base_url}/v1/capabilities"

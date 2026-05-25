@@ -1,6 +1,6 @@
 # Hyver SDK
 
-Typed Python client for the Hyver Hermes Runtime API. Built with [httpx](https://www.python-httpx.org/) and [Pydantic v2](https://docs.pydantic.dev/).
+Typed Python client for the Hyver Runtime API. Built with [httpx](https://www.python-httpx.org/) and [Pydantic v2](https://docs.pydantic.dev/).
 
 ## Features
 
@@ -32,11 +32,11 @@ uv sync --all-extras
 ## Quick Start
 
 ```python
-from hermes import HermesSDK
+from hyver import HyverSDK
 
-client = HermesSDK(
+client = HyverSDK(
     api_key="your-cognito-jwt-token",
-    base_url="https://your-hermes-endpoint.example.com",
+    base_url="https://your-hyver-endpoint.example.com",
 )
 
 # Health check
@@ -74,9 +74,9 @@ client.close()
 ### Context Manager
 
 ```python
-from hermes import HermesSDK
+from hyver import HyverSDK
 
-with HermesSDK(api_key="your-token") as client:
+with HyverSDK(api_key="your-token") as client:
     health = client.health.check()
     print(health.status)
 # Client automatically closed
@@ -86,12 +86,12 @@ with HermesSDK(api_key="your-token") as client:
 
 ```python
 import asyncio
-from hermes import AsyncHermesSDK
+from hyver import AsyncHyverSDK
 
 async def main():
-    async with AsyncHermesSDK(
+    async with AsyncHyverSDK(
         api_key="your-cognito-jwt-token",
-        base_url="https://your-hermes-endpoint.example.com",
+        base_url="https://your-hyver-endpoint.example.com",
     ) as client:
         run = await client.runs.create(
             input="What is the weather?",
@@ -112,16 +112,16 @@ asyncio.run(main())
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `HERMES_API_KEY` | Cognito JWT token | (required) |
-| `HERMES_BASE_URL` | Hermes runtime URL | `http://localhost:8643` |
+| `HYVER_API_KEY` | Cognito JWT token | (required) |
+| `HYVER_BASE_URL` | Hyver runtime URL | `http://localhost:8643` |
 
 ```bash
-export HERMES_API_KEY="eyJhbGciOi..."
-export HERMES_BASE_URL="https://hermes.your-domain.com"
+export HYVER_API_KEY="eyJhbGciOi..."
+export HYVER_BASE_URL="https://hyver.your-domain.com"
 ```
 
 ```python
-client = HermesSDK()  # reads from environment
+client = HyverSDK()  # reads from environment
 ```
 
 ## API Reference
@@ -151,9 +151,9 @@ The streaming endpoint emits the following event types:
 | `approval.required` | `hermes.approval_required` | Human approval needed |
 | `hermes.usage` | | Token usage statistics |
 | `response.completed` | | Run completed (Responses API) |
-| `run.completed` | | Run completed (Hermes native) |
+| `run.completed` | | Run completed (Hyver native) |
 | `response.failed` | | Run failed (Responses API) |
-| `run.failed` | | Run failed (Hermes native) |
+| `run.failed` | | Run failed (Hyver native) |
 | `error` | | Error occurred |
 | `response.output_item.added` | | Output item added (tool call, image) |
 | `response.output_item.done` | | Output item completed |
@@ -162,9 +162,9 @@ The streaming endpoint emits the following event types:
 ## Error Handling
 
 ```python
-from hermes import HermesSDK, AuthenticationError, RateLimitError, APIError
+from hyver import HyverSDK, AuthenticationError, RateLimitError, APIError
 
-client = HermesSDK(api_key="your-token")
+client = HyverSDK(api_key="your-token")
 
 try:
     run = client.runs.create(input="test", session_id="s1")
@@ -224,9 +224,9 @@ Hyver_SDK/
 ├── LICENSE                # Proprietary license
 ├── scripts/
 │   └── post_generate.py   # Post-generation patches for stainful bugs
-├── src/hermes/            # SDK source (generated + patched)
+├── src/hyver/            # SDK source (generated + patched)
 │   ├── __init__.py        # Public exports
-│   ├── _client.py         # HermesSDK + AsyncHermesSDK
+│   ├── _client.py         # HyverSDK + AsyncHyverSDK
 │   ├── _core/             # Base infrastructure
 │   ├── resources/         # API resource classes
 │   └── types/             # Pydantic request/response models
@@ -245,7 +245,7 @@ Hyver_SDK/
 ### v0.1.0 (2026-05-25)
 
 - Initial release
-- 7 Hermes Runtime API endpoints
+- 7 Hyver Runtime API endpoints
 - Sync + async clients
 - SSE streaming with typed events
 - Automatic retries with exponential backoff

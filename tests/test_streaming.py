@@ -7,9 +7,9 @@ from unittest.mock import MagicMock
 import httpx
 import respx
 
-from hermes import AsyncHermesSDK, HermesSDK
-from hermes._core._streaming import Stream, _SSEDecoder
-from hermes.types import (
+from hyver import AsyncHyverSDK, HyverSDK
+from hyver._core._streaming import Stream, _SSEDecoder
+from hyver.types import (
     ContentDeltaEvent,
     ResponseCompletedEvent,
     ResponseCreatedEvent,
@@ -41,7 +41,7 @@ SSE_TOOL_STREAM = (
 
 class TestSyncRunsEventsStream:
     @respx.mock
-    def test_stream_content_events(self, client: HermesSDK, base_url: str) -> None:
+    def test_stream_content_events(self, client: HyverSDK, base_url: str) -> None:
         respx.get(f"{base_url}/v1/runs/run-1/events").mock(
             return_value=httpx.Response(200, text=SSE_CONTENT_STREAM, headers={"content-type": "text/event-stream"})
         )
@@ -58,7 +58,7 @@ class TestSyncRunsEventsStream:
         assert events[3].usage.total_tokens == 15
 
     @respx.mock
-    def test_stream_tool_events(self, client: HermesSDK, base_url: str) -> None:
+    def test_stream_tool_events(self, client: HyverSDK, base_url: str) -> None:
         respx.get(f"{base_url}/v1/runs/run-2/events").mock(
             return_value=httpx.Response(200, text=SSE_TOOL_STREAM, headers={"content-type": "text/event-stream"})
         )
@@ -69,7 +69,7 @@ class TestSyncRunsEventsStream:
         assert events[1].tool == "brave"
 
     @respx.mock
-    def test_stream_as_context_manager(self, client: HermesSDK, base_url: str) -> None:
+    def test_stream_as_context_manager(self, client: HyverSDK, base_url: str) -> None:
         respx.get(f"{base_url}/v1/runs/run-3/events").mock(
             return_value=httpx.Response(200, text=SSE_CONTENT_STREAM, headers={"content-type": "text/event-stream"})
         )
@@ -78,7 +78,7 @@ class TestSyncRunsEventsStream:
         assert len(events) == 4
 
     @respx.mock
-    def test_stream_url_encodes_run_id(self, client: HermesSDK, base_url: str) -> None:
+    def test_stream_url_encodes_run_id(self, client: HyverSDK, base_url: str) -> None:
         route = respx.get(f"{base_url}/v1/runs/run%2Fslash/events").mock(
             return_value=httpx.Response(200, text="data: [DONE]\n\n", headers={"content-type": "text/event-stream"})
         )
@@ -89,7 +89,7 @@ class TestSyncRunsEventsStream:
 
 class TestAsyncRunsEventsStream:
     @respx.mock
-    async def test_stream_content_events(self, async_client: AsyncHermesSDK, base_url: str) -> None:
+    async def test_stream_content_events(self, async_client: AsyncHyverSDK, base_url: str) -> None:
         respx.get(f"{base_url}/v1/runs/run-1/events").mock(
             return_value=httpx.Response(200, text=SSE_CONTENT_STREAM, headers={"content-type": "text/event-stream"})
         )
@@ -100,7 +100,7 @@ class TestAsyncRunsEventsStream:
         assert events[1].delta == "Hello"
 
     @respx.mock
-    async def test_stream_as_context_manager(self, async_client: AsyncHermesSDK, base_url: str) -> None:
+    async def test_stream_as_context_manager(self, async_client: AsyncHyverSDK, base_url: str) -> None:
         respx.get(f"{base_url}/v1/runs/run-2/events").mock(
             return_value=httpx.Response(200, text=SSE_CONTENT_STREAM, headers={"content-type": "text/event-stream"})
         )

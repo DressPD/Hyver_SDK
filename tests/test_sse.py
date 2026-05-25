@@ -1,6 +1,6 @@
 """Tests for SSE decoder and streaming infrastructure."""
 
-from hermes._core._streaming import ServerSentEvent, _SSEDecoder
+from hyver._core._streaming import ServerSentEvent, _SSEDecoder
 
 
 class TestSSEDecoder:

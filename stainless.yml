@@ -42,7 +42,7 @@ resources:
 
 targets:
   python:
-    package_name: hermes
+    package_name: hyver
     publish:
       pypi: false
 
@@ -55,7 +55,7 @@ client_settings:
       type: string
       auth:
         security_scheme: BearerAuth
-      read_env: HERMES_API_KEY
+      read_env: HYVER_API_KEY
   environments:
-    production: https://hermes.your-domain.com
+    production: https://hyver.your-domain.com
     local: http://localhost:8643

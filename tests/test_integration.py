@@ -1,5 +1,5 @@
 """
-Integration test: SDK against live Hermes Runtime.
+Integration test: SDK against live Hyver Runtime.
 
 Requires:
   - AWS credentials (aws sso login --profile hyver-dev)
@@ -59,9 +59,9 @@ def _sep(title: str) -> None:
 
 
 def main() -> int:
-    from hermes import HermesSDK
-    from hermes._core._exceptions import APIError
-    from hermes.types.runs_create_params import RunCreateParamsMetadata
+    from hyver import HyverSDK
+    from hyver._core._exceptions import APIError
+    from hyver.types.runs_create_params import RunCreateParamsMetadata
 
     base_url = os.environ.get("RUNTIME_API", "https://api.hyver.app")
     print(f"Base URL: {base_url}")
@@ -76,7 +76,7 @@ def main() -> int:
         return 1
 
     # ── Client ──
-    client = HermesSDK(api_key=jwt, base_url=base_url, timeout=30)
+    client = HyverSDK(api_key=jwt, base_url=base_url, timeout=30)
 
     passed = 0
     failed = 0

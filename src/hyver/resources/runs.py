@@ -9,18 +9,18 @@ from urllib.parse import quote
 
 import httpx
 
-from hermes._core._request_options import make_request_options
-from hermes._core._resource import AsyncAPIResource, SyncAPIResource
-from hermes._core._response import (
+from hyver._core._request_options import make_request_options
+from hyver._core._resource import AsyncAPIResource, SyncAPIResource
+from hyver._core._response import (
     async_to_raw_response_wrapper,
     async_to_streamed_response_wrapper,
     to_raw_response_wrapper,
     to_streamed_response_wrapper,
 )
-from hermes._core._sentinels import NotGiven, not_given
-from hermes._core._types import Body, FileTypes, Headers, Query  # noqa: F401
-from hermes._core._models import to_jsonable
-from hermes.types import RunCreateParamsConversationHistory, RunCreateParamsImages, RunCreateParamsMetadata, RunCreateResponse
+from hyver._core._sentinels import NotGiven, not_given
+from hyver._core._types import Body, FileTypes, Headers, Query  # noqa: F401
+from hyver._core._models import to_jsonable
+from hyver.types import RunCreateParamsConversationHistory, RunCreateParamsImages, RunCreateParamsMetadata, RunCreateResponse
 
 __all__ = ["RunsResource", "AsyncRunsResource"]
 
@@ -156,7 +156,7 @@ the run."""
     ) -> object:
         """Signals the runtime to stop the specified run."""
         return await self._post(
-            f"/v1/runs/{quote(run_id, safe='')}/stop",
+            f"/v1/runs/{run_id}/stop",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,

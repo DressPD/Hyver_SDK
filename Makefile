@@ -27,7 +27,7 @@ test:
 	uv run python -m pytest tests/ -v
 
 coverage:
-	uv run python -m pytest tests/ -v --cov=hermes --cov-report=term-missing --cov-report=html
+	uv run python -m pytest tests/ -v --cov=hyver --cov-report=term-missing --cov-report=html
 
 # ── Build ─────────────────────────────────────────────────────────────
 build:
@@ -39,7 +39,7 @@ docs:
 
 # ── Maintenance ───────────────────────────────────────────────────────
 clean:
-	rm -rf src/hermes/ dist/ .mypy_cache/ .pytest_cache/ .ruff_cache/ htmlcov/
+	rm -rf src/hyver/ dist/ .mypy_cache/ .pytest_cache/ .ruff_cache/ htmlcov/
 
 # ── Full Pipeline ─────────────────────────────────────────────────────
 check: lint typecheck test
