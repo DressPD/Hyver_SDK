@@ -40,6 +40,18 @@ class _SSEDecoder:
         self._id: Optional[str] = None
         self._retry: Optional[int] = None
 
+    def flush(self) -> Optional[ServerSentEvent]:
+        if not self._data and self._event is None:
+            return None
+        sse = ServerSentEvent(
+            event=self._event,
+            data="\n".join(self._data),
+            id=self._id,
+            retry=self._retry,
+        )
+        self._event, self._data, self._id, self._retry = None, [], None, None
+        return sse
+
     def decode(self, line: str) -> Optional[ServerSentEvent]:
         if not line:  # dispatch on blank line
             if not self._data and self._event is None:
@@ -75,18 +87,32 @@ class Stream(Generic[_T]):
         self._decoder = _SSEDecoder()
 
     def __iter__(self) -> Iterator[_T]:
-        for line in self._response.iter_lines():
-            sse = self._decoder.decode(line.rstrip("\n"))
-            if sse is None:
-                continue
-            if sse.data.strip() == "[DONE]":
-                break
-            yield self._client._process_response_data(  # type: ignore[attr-defined]
-                data=sse.json(), cast_to=self._cast_to, response=self._response
-            )
+        try:
+            for line in self._response.iter_lines():
+                sse = self._decoder.decode(line.rstrip("\n"))
+                if sse is None:
+                    continue
+                if sse.data.strip() == "[DONE]":
+                    break
+                yield self._client._process_response_data(  # type: ignore[attr-defined]
+                    data=sse.json(), cast_to=self._cast_to, response=self._response
+                )
+            sse = self._decoder.flush()
+            if sse is not None and sse.data.strip() not in ("", "[DONE]"):
+                yield self._client._process_response_data(  # type: ignore[attr-defined]
+                    data=sse.json(), cast_to=self._cast_to, response=self._response
+                )
+        finally:
+            self._response.close()
 
     def close(self) -> None:
         self._response.close()
+
+    def __enter__(self) -> Stream[_T]:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.close()
 
 
 class AsyncStream(Generic[_T]):
@@ -97,15 +123,29 @@ class AsyncStream(Generic[_T]):
         self._decoder = _SSEDecoder()
 
     async def __aiter__(self) -> AsyncIterator[_T]:
-        async for line in self._response.aiter_lines():
-            sse = self._decoder.decode(line.rstrip("\n"))
-            if sse is None:
-                continue
-            if sse.data.strip() == "[DONE]":
-                break
-            yield self._client._process_response_data(  # type: ignore[attr-defined]
-                data=sse.json(), cast_to=self._cast_to, response=self._response
-            )
+        try:
+            async for line in self._response.aiter_lines():
+                sse = self._decoder.decode(line.rstrip("\n"))
+                if sse is None:
+                    continue
+                if sse.data.strip() == "[DONE]":
+                    break
+                yield self._client._process_response_data(  # type: ignore[attr-defined]
+                    data=sse.json(), cast_to=self._cast_to, response=self._response
+                )
+            sse = self._decoder.flush()
+            if sse is not None and sse.data.strip() not in ("", "[DONE]"):
+                yield self._client._process_response_data(  # type: ignore[attr-defined]
+                    data=sse.json(), cast_to=self._cast_to, response=self._response
+                )
+        finally:
+            await self._response.aclose()
 
     async def close(self) -> None:
         await self._response.aclose()
+
+    async def __aenter__(self) -> AsyncStream[_T]:
+        return self
+
+    async def __aexit__(self, *args: object) -> None:
+        await self.close()

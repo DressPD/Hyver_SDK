@@ -47,7 +47,7 @@ targets:
       pypi: false
 
 settings:
-  license: MIT
+  license: LicenseRef-Proprietary
 
 client_settings:
   opts:

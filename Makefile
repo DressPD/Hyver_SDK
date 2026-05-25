@@ -1,4 +1,4 @@
-.PHONY: generate lint format typecheck test clean all install
+.PHONY: generate lint format typecheck test coverage build check clean all install
 
 # ── Setup ──────────────────────────────────────────────────────────────
 install:
@@ -7,6 +7,8 @@ install:
 # ── Code Generation ───────────────────────────────────────────────────
 generate:
 	uv run stainful generate --spec openapi.yaml --config stainless.yml --out src
+	uv run python scripts/post_generate.py
+	uv run python scripts/post_generate.py
 
 # ── Quality ───────────────────────────────────────────────────────────
 lint:
@@ -24,13 +26,22 @@ typecheck:
 test:
 	uv run python -m pytest tests/ -v
 
+coverage:
+	uv run python -m pytest tests/ -v --cov=hermes --cov-report=term-missing --cov-report=html
+
+# ── Build ─────────────────────────────────────────────────────────────
+build:
+	uv build
+
 # ── Docs ──────────────────────────────────────────────────────────────
 docs:
 	uv run stainful docs --spec openapi.yaml --config stainless.yml --out api.md
 
 # ── Maintenance ───────────────────────────────────────────────────────
 clean:
-	rm -rf src/hermes/ dist/ .mypy_cache/ .pytest_cache/ .ruff_cache/
+	rm -rf src/hermes/ dist/ .mypy_cache/ .pytest_cache/ .ruff_cache/ htmlcov/
 
 # ── Full Pipeline ─────────────────────────────────────────────────────
-all: generate lint typecheck test
+check: lint typecheck test
+
+all: generate check

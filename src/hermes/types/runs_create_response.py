@@ -7,7 +7,7 @@ from typing import (  # noqa: F401
     Annotated, Any, Dict, List, Literal, Optional, TypedDict, Union,
 )
 
-from pydantic import Field  # noqa: F401
+from pydantic import Field, model_validator  # noqa: F401
 
 from .._core._models import BaseModel  # noqa: F401
 from .._core._types import FileTypes  # noqa: F401
@@ -17,3 +17,10 @@ from .._utils import PropertyInfo  # noqa: F401
 class RunCreateResponse(BaseModel):
     run_id: Optional[str] = None
     id: Optional[str] = None
+
+    @model_validator(mode='after')
+    def _normalize_run_id(self) -> RunCreateResponse:
+        if self.run_id is None and self.id is not None:
+            self.run_id = self.id
+        return self
+

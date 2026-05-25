@@ -5,31 +5,27 @@ Typed Python client for the Hyver Hermes Runtime API. Built with [httpx](https:/
 ## Features
 
 - Fully typed request/response models (Pydantic v2)
-- Sync and async clients
+- Sync and async clients with context manager support
 - SSE streaming for real-time run events
-- Automatic retries with exponential backoff
+- Automatic retries with exponential backoff + jitter
 - Bearer token (JWT) authentication
 - OpenAI-compatible chat completions endpoint
 
 ## Installation
 
-```bash
-pip install hyver-sdk
-```
-
-Or install from GitHub:
+Install from GitHub:
 
 ```bash
-pip install git+https://github.com/DressPD/hyver-sdk.git
+pip install git+https://github.com/DressPD/Hyver_SDK.git
 # or with uv
-uv add git+https://github.com/DressPD/hyver-sdk.git
+uv add git+https://github.com/DressPD/Hyver_SDK.git
 ```
 
 For development:
 
 ```bash
-git clone https://github.com/DressPD/hyver-sdk.git
-cd hyver-sdk
+git clone https://github.com/DressPD/Hyver_SDK.git
+cd Hyver_SDK
 uv sync --all-extras
 ```
 
@@ -57,11 +53,11 @@ run = client.runs.create(
 # Stream run events (SSE)
 stream = client.runs_events.stream(run_id=run.run_id)
 for event in stream:
-    if event.type == "message.delta":
+    if event.type in ("message.delta", "response.output_text.delta"):
         print(event.delta, end="", flush=True)
     elif event.type == "tool.start":
         print(f"\n[Tool: {event.name}]")
-    elif event.type == "run.completed":
+    elif event.type in ("run.completed", "response.completed"):
         print("\n--- Done ---")
 
 # Chat completions (OpenAI-compatible)
@@ -70,6 +66,20 @@ completion = client.chat_completions.create(
     model="default",
 )
 print(completion.choices[0].message.content)
+
+# Close when done
+client.close()
+```
+
+### Context Manager
+
+```python
+from hermes import HermesSDK
+
+with HermesSDK(api_key="your-token") as client:
+    health = client.health.check()
+    print(health.status)
+# Client automatically closed
 ```
 
 ### Async Usage
@@ -79,22 +89,39 @@ import asyncio
 from hermes import AsyncHermesSDK
 
 async def main():
-    client = AsyncHermesSDK(
+    async with AsyncHermesSDK(
         api_key="your-cognito-jwt-token",
         base_url="https://your-hermes-endpoint.example.com",
-    )
+    ) as client:
+        run = await client.runs.create(
+            input="What is the weather?",
+            session_id="session-xyz",
+        )
 
-    run = await client.runs.create(
-        input="What is the weather?",
-        session_id="session-xyz",
-    )
-
-    stream = await client.runs_events.stream(run_id=run.run_id)
-    async for event in stream:
-        if event.type == "message.delta":
-            print(event.delta, end="", flush=True)
+        stream = await client.runs_events.stream(run_id=run.run_id)
+        async for event in stream:
+            if event.type in ("message.delta", "response.output_text.delta"):
+                print(event.delta, end="", flush=True)
 
 asyncio.run(main())
+```
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `HERMES_API_KEY` | Cognito JWT token | (required) |
+| `HERMES_BASE_URL` | Hermes runtime URL | `http://localhost:8643` |
+
+```bash
+export HERMES_API_KEY="eyJhbGciOi..."
+export HERMES_BASE_URL="https://hermes.your-domain.com"
+```
+
+```python
+client = HermesSDK()  # reads from environment
 ```
 
 ## API Reference
@@ -113,41 +140,40 @@ asyncio.run(main())
 
 The streaming endpoint emits the following event types:
 
-| Event | Description |
-|-------|-------------|
-| `response.created` | Run lifecycle started |
-| `message.delta` | Text content chunk |
-| `hermes.reasoning` | Reasoning step available |
-| `tool.start` | Tool execution started |
-| `hermes.tool.progress` | Tool execution progress |
-| `tool.result` | Tool execution completed |
-| `hermes.approval_required` | Human approval needed |
-| `hermes.usage` | Token usage statistics |
-| `response.completed` | Run completed successfully |
-| `run.completed` | Run completed (legacy) |
-| `response.failed` | Run failed |
-| `run.failed` | Run failed (legacy) |
-| `error` | Error occurred |
-| `response.output_item.added` | Output item added |
-| `response.output_item.done` | Output item completed |
-| `message_stop` | Stream finished |
+| Event | Aliases | Description |
+|-------|---------|-------------|
+| `response.created` | | Run lifecycle started |
+| `response.output_text.delta` | `message.delta` | Text content chunk |
+| `reasoning.available` | `response.reasoning`, `hermes.reasoning` | Reasoning step |
+| `tool.start` | | Tool execution started |
+| `tool.progress` | `hermes.tool.progress` | Tool execution progress |
+| `tool.result` | | Tool execution completed |
+| `approval.required` | `hermes.approval_required` | Human approval needed |
+| `hermes.usage` | | Token usage statistics |
+| `response.completed` | | Run completed (Responses API) |
+| `run.completed` | | Run completed (Hermes native) |
+| `response.failed` | | Run failed (Responses API) |
+| `run.failed` | | Run failed (Hermes native) |
+| `error` | | Error occurred |
+| `response.output_item.added` | | Output item added (tool call, image) |
+| `response.output_item.done` | | Output item completed |
+| `done` | `message_stop` | Stream finished |
 
-## Authentication
-
-The SDK uses Cognito JWT tokens for authentication. Pass your token via `api_key`:
+## Error Handling
 
 ```python
-client = HermesSDK(api_key="eyJhbGciOi...")
-```
+from hermes import HermesSDK, AuthenticationError, RateLimitError, APIError
 
-Or set the `HERMES_API_KEY` environment variable:
+client = HermesSDK(api_key="your-token")
 
-```bash
-export HERMES_API_KEY="eyJhbGciOi..."
-```
-
-```python
-client = HermesSDK()  # reads from HERMES_API_KEY
+try:
+    run = client.runs.create(input="test", session_id="s1")
+except AuthenticationError:
+    print("Invalid or expired JWT token")
+except RateLimitError as e:
+    print(f"Rate limited. Retry after: {e.response.headers.get('retry-after')}")
+except APIError as e:
+    print(f"API error {e.status_code}: {e.message}")
 ```
 
 ## Development
@@ -160,54 +186,71 @@ client = HermesSDK()  # reads from HERMES_API_KEY
 ### Setup
 
 ```bash
-git clone https://github.com/DressPD/hyver-sdk.git
-cd hyver-sdk
-uv sync --all-extras   # install all deps including dev tools
+git clone https://github.com/DressPD/Hyver_SDK.git
+cd Hyver_SDK
+uv sync --all-extras
 ```
 
 ### Regenerate SDK from OpenAPI Spec
 
-The SDK is generated from `openapi.yaml` using [stainful](https://github.com/stainlu/stainful):
+The SDK is generated from `openapi.yaml` using [stainful](https://github.com/stainlu/stainful), with post-generation patches applied automatically:
 
 ```bash
-make generate           # regenerate src/hermes/ from openapi.yaml + stainless.yml
+make generate    # stainful generate + post_generate.py patches
 ```
 
 ### Code Quality
 
 ```bash
-make lint               # ruff check
-make format             # ruff format
-make typecheck          # mypy
-make test               # pytest
-make all                # lint + typecheck + test
+make lint        # ruff check + format check
+make format      # auto-format
+make typecheck   # mypy
+make test        # pytest
+make coverage    # pytest with coverage report
+make check       # lint + typecheck + test
+make build       # build package
+make all         # generate + check
 ```
 
 ## Project Structure
 
 ```
-hyver-sdk/
-├── openapi.yaml        # OpenAPI 3.1 spec (source of truth)
-├── stainless.yml       # stainful generation config
-├── pyproject.toml      # Package metadata + dependencies
-├── Makefile            # Dev workflow targets
-├── uv.lock             # Locked dependencies
-├── src/hermes/         # Generated SDK
-│   ├── __init__.py     # Public exports
-│   ├── _client.py      # HermesSDK + AsyncHermesSDK
-│   ├── _core/          # Base infrastructure
-│   ├── resources/      # API resource classes
-│   └── types/          # Pydantic request/response models
-└── tests/              # SDK tests
+Hyver_SDK/
+├── openapi.yaml           # OpenAPI 3.1 spec (source of truth)
+├── stainless.yml          # stainful generation config
+├── pyproject.toml         # Package metadata + dependencies
+├── Makefile               # Dev workflow targets
+├── uv.lock                # Locked dependencies
+├── LICENSE                # Proprietary license
+├── scripts/
+│   └── post_generate.py   # Post-generation patches for stainful bugs
+├── src/hermes/            # SDK source (generated + patched)
+│   ├── __init__.py        # Public exports
+│   ├── _client.py         # HermesSDK + AsyncHermesSDK
+│   ├── _core/             # Base infrastructure
+│   ├── resources/         # API resource classes
+│   └── types/             # Pydantic request/response models
+└── tests/                 # SDK tests
 ```
 
 ## Adding New Endpoints
 
 1. Add the endpoint to `openapi.yaml`
 2. Add the resource mapping in `stainless.yml`
-3. Run `make generate`
-4. Run `make all` to verify
+3. Run `make generate` (applies patches automatically)
+4. Run `make check` to verify
+
+## Changelog
+
+### v0.1.0 (2026-05-25)
+
+- Initial release
+- 7 Hermes Runtime API endpoints
+- Sync + async clients
+- SSE streaming with typed events
+- Automatic retries with exponential backoff
+- JWT authentication
 
 ## License
 
-Internal use only.
+Proprietary. See [LICENSE](LICENSE) for details.

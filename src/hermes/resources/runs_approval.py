@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
 from functools import cached_property
+from urllib.parse import quote
 
 import httpx
 
@@ -48,7 +49,7 @@ human-in-the-loop control enabled."""
         }
         _body = {k: v for k, v in _body.items() if v is not not_given}
         return self._post(
-            f"/v1/runs/{run_id}/approval",
+            f"/v1/runs/{quote(run_id, safe='')}/approval",
             body=to_jsonable(_body),
             options=make_request_options(
                 extra_headers=extra_headers,
@@ -86,7 +87,7 @@ human-in-the-loop control enabled."""
         }
         _body = {k: v for k, v in _body.items() if v is not not_given}
         return await self._post(
-            f"/v1/runs/{run_id}/approval",
+            f"/v1/runs/{quote(run_id, safe='')}/approval",
             body=to_jsonable(_body),
             options=make_request_options(
                 extra_headers=extra_headers,

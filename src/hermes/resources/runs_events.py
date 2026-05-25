@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from functools import cached_property
 from typing import Annotated, Union
+from urllib.parse import quote
 
 import httpx
 
@@ -85,7 +86,7 @@ content deltas, tool executions, reasoning steps, approval requests,
 usage statistics, and completion/failure signals."""
         return self._client._request(
             "GET",
-            f"/v1/runs/{run_id}/events",
+            f"/v1/runs/{quote(run_id, safe='')}/events",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -121,7 +122,7 @@ content deltas, tool executions, reasoning steps, approval requests,
 usage statistics, and completion/failure signals."""
         return await self._client._request(
             "GET",
-            f"/v1/runs/{run_id}/events",
+            f"/v1/runs/{quote(run_id, safe='')}/events",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,

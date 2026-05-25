@@ -5,6 +5,7 @@ from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
 from functools import cached_property
 from typing import List
+from urllib.parse import quote
 
 import httpx
 
@@ -84,7 +85,7 @@ the run."""
     ) -> object:
         """Signals the runtime to stop the specified run."""
         return self._post(
-            f"/v1/runs/{run_id}/stop",
+            f"/v1/runs/{quote(run_id, safe='')}/stop",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -155,7 +156,7 @@ the run."""
     ) -> object:
         """Signals the runtime to stop the specified run."""
         return await self._post(
-            f"/v1/runs/{run_id}/stop",
+            f"/v1/runs/{quote(run_id, safe='')}/stop",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,

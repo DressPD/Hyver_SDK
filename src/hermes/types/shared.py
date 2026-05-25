@@ -19,7 +19,7 @@ class ResponseCreatedEvent(BaseModel):
 
 
 class ContentDeltaEvent(BaseModel):
-    type: Literal['message.delta']
+    type: Literal['response.output_text.delta', 'message.delta']
     delta: str
 
 
@@ -80,7 +80,7 @@ class ToolStartEvent(BaseModel):
 
 
 class ToolProgressEvent(BaseModel):
-    type: Literal['hermes.tool.progress']
+    type: Literal['tool.progress', 'hermes.tool.progress']
     tool: Optional[str] = None
     name: Optional[str] = None
     call_id: Optional[str] = None
@@ -95,12 +95,12 @@ class ToolResultEvent(BaseModel):
 
 
 class ReasoningEvent(BaseModel):
-    type: Literal['hermes.reasoning']
+    type: Literal['reasoning.available', 'response.reasoning', 'hermes.reasoning']
     text: str
 
 
 class ApprovalRequiredEvent(BaseModel):
-    type: Literal['hermes.approval_required']
+    type: Literal['approval.required', 'hermes.approval_required']
     run_id: Optional[str] = None
     tool: Optional[str] = None
     input: Optional[Dict[str, object]] = None
@@ -144,5 +144,5 @@ class ErrorEvent(BaseModel):
 
 
 class DoneEvent(BaseModel):
-    type: Literal['message_stop']
+    type: Literal['done', 'message_stop']
     session_id: Optional[str] = None

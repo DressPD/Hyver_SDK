@@ -141,7 +141,14 @@ class InternalServerError(APIStatusError):
 
 def status_error_for(response: httpx.Response, body: object | None) -> APIStatusError:
     """Map an HTTP status to the precise typed exception (RESEARCH §4 #4)."""
-    msg = f"Error code: {response.status_code}"
+    server_msg: Optional[str] = None
+    if isinstance(body, dict):
+        err = body.get("error")
+        if isinstance(err, dict):
+            server_msg = err.get("message")
+        if not server_msg:
+            server_msg = body.get("message")  # type: ignore[assignment]
+    msg = server_msg or f"Error code: {response.status_code}"
     cls: dict[int, type[APIStatusError]] = {
         400: BadRequestError,
         401: AuthenticationError,

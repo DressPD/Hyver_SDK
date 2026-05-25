@@ -8,6 +8,7 @@ thin glue over `_get/_post/...`.
 
 from __future__ import annotations
 
+import email.utils
 import random
 import secrets
 import time
@@ -126,18 +127,30 @@ class _BaseClient:
     def _retry_delay(self, response: Optional[httpx.Response], attempt: int) -> float:
         if response is not None:
             ra = response.headers.get("retry-after")
-            if ra and ra.isdigit():
-                return min(float(ra), _MAX_RETRY_DELAY)
+            if ra:
+                if ra.isdigit():
+                    return min(float(ra), _MAX_RETRY_DELAY)
+                try:
+                    dt = email.utils.parsedate_to_datetime(ra)
+                    delta = (dt - dt.now(tz=dt.tzinfo)).total_seconds()
+                    if delta > 0:
+                        return min(delta, _MAX_RETRY_DELAY)
+                except Exception:
+                    pass
         # exponential backoff + full jitter
         base = min(_INITIAL_RETRY_DELAY * (2 ** attempt), _MAX_RETRY_DELAY)
         return base * (0.5 + random.random() / 2)
 
-    def _prepare_retry(self, request: httpx.Request) -> None:
-        # auto idempotency key so retried writes are safe (RESEARCH §4 #11)
+    def _prepare_retry(self, request: httpx.Request, options: Optional[RequestOptions] = None) -> None:
         if request.method in ("POST", "PATCH") and "idempotency-key" not in (
             k.lower() for k in request.headers
         ):
-            request.headers["idempotency-key"] = f"stainful-retry-{secrets.token_hex(16)}"
+            key = (
+                options.idempotency_key
+                if options is not None and options.idempotency_key
+                else f"stainful-retry-{secrets.token_hex(16)}"
+            )
+            request.headers["idempotency-key"] = key
 
     def _parse_body(self, response: httpx.Response) -> object | None:
         try:
@@ -194,6 +207,15 @@ class SyncAPIClient(_BaseClient):
         super().__init__(**kw)
         self._client = http_client or httpx.Client()
 
+    def close(self) -> None:
+        self._client.close()
+
+    def __enter__(self) -> SyncAPIClient:
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        self.close()
+
     def _request(
         self, method: str, path: str, *, options: RequestOptions,
         cast_to: Any, json_body: Any = None,
@@ -205,8 +227,13 @@ class SyncAPIClient(_BaseClient):
             method, path, options, json_body,
             multipart=multipart, binary=binary, files=files,
         )
+        max_retries = (
+            options.max_retries
+            if not isinstance(options.max_retries, NotGiven)
+            else self._max_retries
+        )
         last_exc: Exception | None = None
-        for attempt in range(self._max_retries + 1):
+        for attempt in range(max_retries + 1):
             try:
                 response = self._client.send(request, stream=stream)
             except httpx.TimeoutException:
@@ -225,14 +252,14 @@ class SyncAPIClient(_BaseClient):
                     )
                 if stream:
                     response.read()  # drain so the error body is available
-                if attempt < self._max_retries and self._should_retry(response):
+                if attempt < max_retries and self._should_retry(response):
                     time.sleep(self._retry_delay(response, attempt))
-                    self._prepare_retry(request)
+                    self._prepare_retry(request, options)
                     continue
                 raise status_error_for(response, self._parse_body(response))
-            if attempt < self._max_retries:
+            if attempt < max_retries:
                 time.sleep(self._retry_delay(None, attempt))
-                self._prepare_retry(request)
+                self._prepare_retry(request, options)
                 continue
             assert last_exc is not None
             raise last_exc
@@ -295,6 +322,15 @@ class AsyncAPIClient(_BaseClient):
         super().__init__(**kw)
         self._client = http_client or httpx.AsyncClient()
 
+    async def aclose(self) -> None:
+        await self._client.aclose()
+
+    async def __aenter__(self) -> AsyncAPIClient:
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        await self.aclose()
+
     async def _request(
         self, method: str, path: str, *, options: RequestOptions,
         cast_to: Any, json_body: Any = None,
@@ -308,8 +344,13 @@ class AsyncAPIClient(_BaseClient):
             method, path, options, json_body,
             multipart=multipart, binary=binary, files=files,
         )
+        max_retries = (
+            options.max_retries
+            if not isinstance(options.max_retries, NotGiven)
+            else self._max_retries
+        )
         last_exc: Exception | None = None
-        for attempt in range(self._max_retries + 1):
+        for attempt in range(max_retries + 1):
             try:
                 response = await self._client.send(request, stream=stream)
             except httpx.TimeoutException:
@@ -328,14 +369,14 @@ class AsyncAPIClient(_BaseClient):
                     )
                 if stream:
                     await response.aread()
-                if attempt < self._max_retries and self._should_retry(response):
+                if attempt < max_retries and self._should_retry(response):
                     await asyncio.sleep(self._retry_delay(response, attempt))
-                    self._prepare_retry(request)
+                    self._prepare_retry(request, options)
                     continue
                 raise status_error_for(response, self._parse_body(response))
-            if attempt < self._max_retries:
+            if attempt < max_retries:
                 await asyncio.sleep(self._retry_delay(None, attempt))
-                self._prepare_retry(request)
+                self._prepare_retry(request, options)
                 continue
             assert last_exc is not None
             raise last_exc

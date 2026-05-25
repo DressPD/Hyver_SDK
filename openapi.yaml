@@ -6,14 +6,11 @@ info:
     AI agent runtime API for Hyver. Provides health checks, chat completions
     (OpenAI-compatible via LiteLLM), and agent run management with SSE streaming.
   license:
-    name: MIT
+    name: Proprietary
 
 servers:
-  - url: "{base_url}"
-    description: Hermes Runtime server
-    variables:
-      base_url:
-        default: http://localhost:8643
+  - url: http://localhost:8643
+    description: Local Hermes Runtime server
 
 security:
   - BearerAuth: []
@@ -86,8 +83,14 @@ paths:
             text/event-stream:
               schema:
                 $ref: "#/components/schemas/ChatCompletionChunk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /v1/runs:
     post:
@@ -111,8 +114,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RunCreateResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /v1/runs/{run_id}/events:
     get:
@@ -134,6 +143,10 @@ paths:
                 $ref: "#/components/schemas/RunEvent"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /v1/runs/{run_id}/approval:
     post:
@@ -156,6 +169,8 @@ paths:
           description: Approval submitted
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /v1/runs/{run_id}/stop:
     post:
@@ -170,6 +185,8 @@ paths:
           description: Run stop requested
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
 components:
   securitySchemes:
@@ -189,8 +206,32 @@ components:
       description: Unique run identifier
 
   responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
     Unauthorized:
       description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimited:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalError:
+      description: Internal server error
       content:
         application/json:
           schema:
@@ -752,6 +793,16 @@ components:
       type: object
       properties:
         error:
-          type: string
+          type: object
+          properties:
+            message:
+              type: string
+            type:
+              type: string
+            code:
+              type: string
+            param:
+              type: string
         message:
           type: string
+          description: Alternative flat error message field.
