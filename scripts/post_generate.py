@@ -267,16 +267,20 @@ def patch_streaming_py() -> None:
         "                if sse.data.strip() == \"[DONE]\":\n"
         "                    break\n"
         "                yield self._client._process_response_data(  # type: ignore[attr-defined]\n"
-        "                    data=sse.json(), cast_to=self._cast_to, response=self._response\n"
+        "                    data=self._normalize_event_data(sse.json()),\n"
+        "                    cast_to=self._cast_to,\n"
+        "                    response=self._response,\n"
         "                )\n"
         "            sse = self._decoder.flush()\n"
         "            if sse is not None and sse.data.strip() not in (\"\", \"[DONE]\"):\n"
         "                yield self._client._process_response_data(  # type: ignore[attr-defined]\n"
-        "                    data=sse.json(), cast_to=self._cast_to, response=self._response\n"
+        "                    data=self._normalize_event_data(sse.json()),\n"
+        "                    cast_to=self._cast_to,\n"
+        "                    response=self._response,\n"
         "                )\n"
         "        finally:\n"
         "            self._response.close()\n",
-        "Fix 3b: Stream.__iter__ try/finally auto-close + flush",
+        "Fix 3b: Stream.__iter__ try/finally auto-close + flush + event normalization",
     )
 
     _patch(
@@ -290,6 +294,19 @@ def patch_streaming_py() -> None:
         "    def __exit__(self, *args: object) -> None:\n"
         "        self.close()\n",
         "Fix 3c: Stream context manager",
+    )
+
+    _patch(
+        path,
+        "    def __enter__(self) -> Stream[_T]:\n",
+        "    @staticmethod\n"
+        "    def _normalize_event_data(data: object) -> object:\n"
+        '        """Hermes sends discriminator as \'event\'; Pydantic models use \'type\'."""\n'
+        "        if isinstance(data, dict) and \"event\" in data and \"type\" not in data:\n"
+        "            data[\"type\"] = data.pop(\"event\")\n"
+        "        return data\n\n"
+        "    def __enter__(self) -> Stream[_T]:\n",
+        "Fix 3c2: Stream._normalize_event_data for server event→type mapping",
     )
 
     _patch(
@@ -313,16 +330,20 @@ def patch_streaming_py() -> None:
         "                if sse.data.strip() == \"[DONE]\":\n"
         "                    break\n"
         "                yield self._client._process_response_data(  # type: ignore[attr-defined]\n"
-        "                    data=sse.json(), cast_to=self._cast_to, response=self._response\n"
+        "                    data=Stream._normalize_event_data(sse.json()),\n"
+        "                    cast_to=self._cast_to,\n"
+        "                    response=self._response,\n"
         "                )\n"
         "            sse = self._decoder.flush()\n"
         "            if sse is not None and sse.data.strip() not in (\"\", \"[DONE]\"):\n"
         "                yield self._client._process_response_data(  # type: ignore[attr-defined]\n"
-        "                    data=sse.json(), cast_to=self._cast_to, response=self._response\n"
+        "                    data=Stream._normalize_event_data(sse.json()),\n"
+        "                    cast_to=self._cast_to,\n"
+        "                    response=self._response,\n"
         "                )\n"
         "        finally:\n"
         "            await self._response.aclose()\n",
-        "Fix 3d: AsyncStream.__aiter__ try/finally auto-close + flush",
+        "Fix 3d: AsyncStream.__aiter__ try/finally auto-close + flush + event normalization",
     )
 
     _patch(

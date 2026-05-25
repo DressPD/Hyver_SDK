@@ -86,6 +86,13 @@ class Stream(Generic[_T]):
         self._client = client
         self._decoder = _SSEDecoder()
 
+    @staticmethod
+    def _normalize_event_data(data: object) -> object:
+        """Hermes sends discriminator as 'event'; Pydantic models use 'type'."""
+        if isinstance(data, dict) and "event" in data and "type" not in data:
+            data["type"] = data.pop("event")
+        return data
+
     def __iter__(self) -> Iterator[_T]:
         try:
             for line in self._response.iter_lines():
@@ -95,12 +102,16 @@ class Stream(Generic[_T]):
                 if sse.data.strip() == "[DONE]":
                     break
                 yield self._client._process_response_data(  # type: ignore[attr-defined]
-                    data=sse.json(), cast_to=self._cast_to, response=self._response
+                    data=self._normalize_event_data(sse.json()),
+                    cast_to=self._cast_to,
+                    response=self._response,
                 )
             sse = self._decoder.flush()
             if sse is not None and sse.data.strip() not in ("", "[DONE]"):
                 yield self._client._process_response_data(  # type: ignore[attr-defined]
-                    data=sse.json(), cast_to=self._cast_to, response=self._response
+                    data=self._normalize_event_data(sse.json()),
+                    cast_to=self._cast_to,
+                    response=self._response,
                 )
         finally:
             self._response.close()
@@ -131,12 +142,16 @@ class AsyncStream(Generic[_T]):
                 if sse.data.strip() == "[DONE]":
                     break
                 yield self._client._process_response_data(  # type: ignore[attr-defined]
-                    data=sse.json(), cast_to=self._cast_to, response=self._response
+                    data=Stream._normalize_event_data(sse.json()),
+                    cast_to=self._cast_to,
+                    response=self._response,
                 )
             sse = self._decoder.flush()
             if sse is not None and sse.data.strip() not in ("", "[DONE]"):
                 yield self._client._process_response_data(  # type: ignore[attr-defined]
-                    data=sse.json(), cast_to=self._cast_to, response=self._response
+                    data=Stream._normalize_event_data(sse.json()),
+                    cast_to=self._cast_to,
+                    response=self._response,
                 )
         finally:
             await self._response.aclose()
