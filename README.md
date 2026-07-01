@@ -162,6 +162,24 @@ export HYVER_BASE_URL="https://hyver.your-domain.com"
 client = HyverSDK()  # reads from environment
 ```
 
+### Timeouts, retries, and per-request options
+
+```python
+client = HyverSDK(api_key=..., timeout=30.0, max_retries=4)
+
+# Per-call overrides (all resource methods accept these):
+client.runs.create(input="...", session_id="s1", timeout=5.0,
+                   extra_headers={"X-Session-Id": "s1"})
+```
+
+Every request sends a versioned `User-Agent` (`hyver-sdk/<version> python/<x.y.z>`)
+— override it per call via `extra_headers={"User-Agent": "..."}`. The installed
+version is available as `hyver.__version__`.
+
+> `session_id` identifies a Hyver conversation/session. Sessions are managed by
+> the Hyver **loader** API (outside this runtime SDK); pass an existing session id
+> here.
+
 ## API Reference
 
 | Method | HTTP | Description |
@@ -282,6 +300,9 @@ Hyver_SDK/
 
 ### Unreleased
 
+- Send a versioned `User-Agent` header (`hyver-sdk/<version> python/<x.y.z>`) on
+  every request; overridable via `extra_headers`
+- Expose the installed package version as `hyver.__version__`
 - Fix Python 3.10 compatibility: import `Required`/`TypedDict` from
   `typing_extensions` instead of `typing` (`typing.Required` is 3.11+)
 - Fix async `runs.stop()` / `runs_approval.submit()` to URL-encode `run_id`

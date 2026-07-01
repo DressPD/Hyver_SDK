@@ -78,6 +78,32 @@ def patch_base_client_py() -> None:
         "Fix 2/7/9: add email.utils import",
     )
 
+    # Fix 14: versioned User-Agent (runs after Fix 2, so the stdlib import block
+    # already starts with `import email.utils`).
+    _patch(
+        path,
+        "import email.utils\nimport random\nimport secrets\nimport time\n"
+        "from typing import Any, Optional\n\nimport httpx",
+        "import email.utils\nimport platform\nimport random\nimport secrets\nimport time\n"
+        "from importlib.metadata import PackageNotFoundError, version\n"
+        "from typing import Any, Optional\n\nimport httpx\n\n"
+        "try:\n"
+        '    _SDK_VERSION = version("hyver-sdk")\n'
+        "except PackageNotFoundError:  # running from a source tree without install metadata\n"
+        '    _SDK_VERSION = "0.0.0"\n\n'
+        "# Identifies the SDK (and Python runtime) to the server — aids backend\n"
+        "# observability (X-Ray) and lets the API attribute traffic. Callers may\n"
+        "# override it per request via `extra_headers`.\n"
+        'USER_AGENT = f"hyver-sdk/{_SDK_VERSION} python/{platform.python_version()}"',
+        "Fix 14a: User-Agent constant + SDK version",
+    )
+    _patch(
+        path,
+        'headers = {"Accept": "application/json", **self._auth_headers}',
+        'headers = {"Accept": "application/json", "User-Agent": USER_AGENT, **self._auth_headers}',
+        "Fix 14b: send User-Agent header",
+    )
+
     _patch(
         path,
         "class SyncAPIClient(_BaseClient):\n"
@@ -470,6 +496,30 @@ def patch_exceptions_py() -> None:
     )
 
 
+def patch_version_exports() -> None:
+    path = SRC / "__init__.py"
+    print(f"Patching {path.relative_to(SDK_ROOT)} ...")
+    _patch(
+        path,
+        "from __future__ import annotations\n\nfrom ._client import AsyncHyverSDK, HyverSDK",
+        "from __future__ import annotations\n\n"
+        "from importlib.metadata import PackageNotFoundError, version\n\n"
+        "from ._client import AsyncHyverSDK, HyverSDK",
+        "Fix 15a: import importlib.metadata for __version__",
+    )
+    _patch(
+        path,
+        "HyverSDKError = APIError\nHyverSDKAPIResponse = APIResponse\n\n__all__ = [\n    \"HyverSDK\",",
+        "HyverSDKError = APIError\nHyverSDKAPIResponse = APIResponse\n\n"
+        "try:\n"
+        '    __version__ = version("hyver-sdk")\n'
+        "except PackageNotFoundError:  # running from a source tree without install metadata\n"
+        '    __version__ = "0.0.0"\n\n'
+        "__all__ = [\n    \"__version__\",\n    \"HyverSDK\",",
+        "Fix 15b: expose __version__",
+    )
+
+
 def patch_missing_bugfixes() -> None:
     client_path = SRC / "_client.py"
     print(f"Patching {client_path.relative_to(SDK_ROOT)} ...")
@@ -745,6 +795,7 @@ def main() -> None:
     patch_params_files()
     patch_runs_create_response_py()
     patch_exceptions_py()
+    patch_version_exports()
     patch_missing_bugfixes()
     patch_runs_resources()
     print("=== done ===")

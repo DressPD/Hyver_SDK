@@ -9,12 +9,24 @@ thin glue over `_get/_post/...`.
 from __future__ import annotations
 
 import email.utils
+import platform
 import random
 import secrets
 import time
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Optional
 
 import httpx
+
+try:
+    _SDK_VERSION = version("hyver-sdk")
+except PackageNotFoundError:  # running from a source tree without install metadata
+    _SDK_VERSION = "0.0.0"
+
+# Identifies the SDK (and Python runtime) to the server — aids backend
+# observability (X-Ray) and lets the API attribute traffic. Callers may
+# override it per request via `extra_headers`.
+USER_AGENT = f"hyver-sdk/{_SDK_VERSION} python/{platform.python_version()}"
 
 from ._exceptions import (
     APIConnectionError,
@@ -69,7 +81,7 @@ class _BaseClient:
         params.update(options.params or {})
         if options.extra_query:
             params.update(options.extra_query)
-        headers = {"Accept": "application/json", **self._auth_headers}
+        headers = {"Accept": "application/json", "User-Agent": USER_AGENT, **self._auth_headers}
         if options.extra_headers:
             headers.update({k: v for k, v in options.extra_headers.items() if v})
         timeout = (
