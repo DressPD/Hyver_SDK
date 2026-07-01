@@ -520,6 +520,93 @@ def patch_version_exports() -> None:
     )
 
 
+def patch_sessions_wiring() -> None:
+    """Wire the hand-maintained loader-backed `sessions` resource into the
+    generated package. `resources/sessions.py` and `types/session.py` are not
+    stainful-generated (the loader is a separate service/base URL), so they
+    survive regeneration; only the generated __init__/_client glue needs
+    re-applying here. All edits are idempotent."""
+    # resources/__init__.py — append import + a complete __all__ (stainful emits
+    # no __all__ for resources). Order-independent so it's robust to import sort.
+    res_init = SRC / "resources" / "__init__.py"
+    print(f"Patching {res_init.relative_to(SDK_ROOT)} ...")
+    text = res_init.read_text()
+    if "from .sessions import" not in text:
+        text = text.rstrip() + "\nfrom .sessions import AsyncSessionsResource, SessionsResource\n"
+        print("  [patch] Fix 16a: resources import sessions")
+    if "__all__" not in text:
+        names = [
+            "AsyncCapabilitiesResource", "AsyncChatCompletionsResource", "AsyncHealthResource",
+            "AsyncRunsApprovalResource", "AsyncRunsEventsResource", "AsyncRunsResource",
+            "AsyncSessionsResource", "CapabilitiesResource", "ChatCompletionsResource",
+            "HealthResource", "RunsApprovalResource", "RunsEventsResource", "RunsResource",
+            "SessionsResource",
+        ]
+        text += "\n__all__ = [\n" + "".join(f'    "{n}",\n' for n in names) + "]\n"
+        print("  [patch] Fix 16b: resources __all__")
+    res_init.write_text(text)
+
+    # types/__init__.py — append import + extend the existing __all__.
+    types_init = SRC / "types" / "__init__.py"
+    print(f"Patching {types_init.relative_to(SDK_ROOT)} ...")
+    text = types_init.read_text()
+    if "from .session import" not in text:
+        text = text.rstrip() + (
+            "\nfrom .session import (\n"
+            "    Session,\n"
+            "    SessionHistoryPagination,\n"
+            "    SessionHistoryResponse,\n"
+            "    SessionListResponse,\n"
+            ")\n"
+            '\n__all__ += [\n'
+            '    "Session",\n'
+            '    "SessionHistoryPagination",\n'
+            '    "SessionHistoryResponse",\n'
+            '    "SessionListResponse",\n'
+            "]\n"
+        )
+        types_init.write_text(text)
+        print("  [patch] Fix 16c: types import + __all__ extend for session models")
+
+    # _client.py — add loader_base_url option, store it, attach the resource.
+    # Each insertion is independently guarded so re-runs (the Makefile invokes
+    # post_generate twice) never duplicate.
+    client_path = SRC / "_client.py"
+    print(f"Patching {client_path.relative_to(SDK_ROOT)} ...")
+    text = client_path.read_text()
+    loader_assign = (
+        "        # Loader service (session CRUD/history) — different base URL, same auth.\n"
+        "        self._loader_base_url = "
+        '(loader_base_url or os.environ.get("HYVER_LOADER_BASE_URL") or "").rstrip("/") or None\n'
+    )
+    if "loader_base_url: str | None = None," not in text:
+        # identical kwarg line in both Sync + Async __init__ → replace all.
+        text = text.replace(
+            "        base_url: str | httpx.URL | None = None,\n",
+            "        base_url: str | httpx.URL | None = None,\n        loader_base_url: str | None = None,\n",
+        )
+    if "self._loader_base_url" not in text:
+        for health_line in (
+            "        self.health = resources.HealthResource(self)\n",
+            "        self.health = resources.AsyncHealthResource(self)\n",
+        ):
+            text = text.replace(health_line, loader_assign + health_line, 1)
+    for anno, attr in (
+        ("resources.RunsApprovalResource", "SessionsResource"),
+        ("resources.AsyncRunsApprovalResource", "AsyncSessionsResource"),
+    ):
+        if f"sessions: resources.{attr}" not in text:
+            text = text.replace(f"    runs_approval: {anno}\n", f"    runs_approval: {anno}\n    sessions: resources.{attr}\n", 1)
+        if f"self.sessions = resources.{attr}(self)" not in text:
+            text = text.replace(
+                f"        self.runs_approval = {anno}(self)\n",
+                f"        self.runs_approval = {anno}(self)\n        self.sessions = resources.{attr}(self)\n",
+                1,
+            )
+    client_path.write_text(text)
+    print("  [patch] Fix 16d: _client.py loader_base_url + sessions resource")
+
+
 def patch_missing_bugfixes() -> None:
     client_path = SRC / "_client.py"
     print(f"Patching {client_path.relative_to(SDK_ROOT)} ...")
@@ -796,6 +883,7 @@ def main() -> None:
     patch_runs_create_response_py()
     patch_exceptions_py()
     patch_version_exports()
+    patch_sessions_wiring()
     patch_missing_bugfixes()
     patch_runs_resources()
     print("=== done ===")

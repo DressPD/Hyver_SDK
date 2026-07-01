@@ -152,10 +152,12 @@ asyncio.run(main())
 |----------|-------------|---------|
 | `HYVER_API_KEY` | Cognito JWT **ID token** | (required) |
 | `HYVER_BASE_URL` | Hyver runtime URL | `http://localhost:8643` |
+| `HYVER_LOADER_BASE_URL` | Hyver loader URL (for `client.sessions.*`) | (unset — sessions disabled) |
 
 ```bash
 export HYVER_API_KEY="eyJhbGciOi..."
 export HYVER_BASE_URL="https://hyver.your-domain.com"
+export HYVER_LOADER_BASE_URL="https://loader.hyver.your-domain.com"
 ```
 
 ```python
@@ -176,9 +178,32 @@ Every request sends a versioned `User-Agent` (`hyver-sdk/<version> python/<x.y.z
 — override it per call via `extra_headers={"User-Agent": "..."}`. The installed
 version is available as `hyver.__version__`.
 
-> `session_id` identifies a Hyver conversation/session. Sessions are managed by
-> the Hyver **loader** API (outside this runtime SDK); pass an existing session id
-> here.
+### Sessions (loader service)
+
+`runs.create(...)` needs a `session_id`. Sessions are owned by the Hyver
+**loader** service — a different base URL from the runtime, same Cognito ID-token
+auth. Configure `loader_base_url` (or `HYVER_LOADER_BASE_URL`) to enable
+`client.sessions.*`; without it, session calls raise `ValueError`.
+
+```python
+client = HyverSDK(
+    api_key="...",
+    base_url="https://hyver.your-domain.com",           # runtime
+    loader_base_url="https://loader.hyver.your-domain.com",  # loader
+)
+
+# Full flow: create a session, then run against it
+session = client.sessions.create(title="Quarterly review")
+run = client.runs.create(input="Summarize Q3", session_id=session.session_id)
+for event in client.runs_events.stream(run_id=run.run_id):
+    ...
+
+# Manage sessions
+for s in client.sessions.list(status="active", limit=20).sessions:
+    print(s.session_id, s.title)
+history = client.sessions.history(session_id=session.session_id, limit=50)
+client.sessions.delete(session_id=session.session_id)
+```
 
 ## API Reference
 
@@ -191,6 +216,16 @@ version is available as `hyver.__version__`.
 | `client.runs.stop(run_id=...)` | `POST /v1/runs/{run_id}/stop` | Stop a running agent |
 | `client.runs_events.stream(run_id=...)` | `GET /v1/runs/{run_id}/events` | Stream run events (SSE) |
 | `client.runs_approval.submit(run_id=..., approved=...)` | `POST /v1/runs/{run_id}/approval` | Approve/reject tool use |
+
+**Sessions** (loader service — requires `loader_base_url`):
+
+| Method | HTTP | Description |
+|--------|------|-------------|
+| `client.sessions.create(...)` | `POST /sessions` | Create a session |
+| `client.sessions.list(...)` | `GET /sessions` | List the user's sessions |
+| `client.sessions.retrieve(session_id=...)` | `GET /sessions/{id}` | Get one session |
+| `client.sessions.delete(session_id=...)` | `DELETE /sessions/{id}` | End a session |
+| `client.sessions.history(session_id=...)` | `GET /sessions/{id}/history` | Paginated message history |
 
 ## SSE Event Types
 
@@ -300,6 +335,9 @@ Hyver_SDK/
 
 ### Unreleased
 
+- Add `client.sessions` (loader-backed): `create` / `list` / `retrieve` /
+  `delete` / `history`, enabling the full create-session → run → stream flow.
+  Configure `loader_base_url` / `HYVER_LOADER_BASE_URL` (same Cognito auth)
 - Send a versioned `User-Agent` header (`hyver-sdk/<version> python/<x.y.z>`) on
   every request; overridable via `extra_headers`
 - Expose the installed package version as `hyver.__version__`

@@ -40,6 +40,12 @@ resources:
     methods:
       submit: post /v1/runs/{run_id}/approval
 
+  # NOTE: the `sessions` resource is intentionally NOT listed here. Session
+  # CRUD/history is served by the Hyver *loader* service at a different base URL
+  # (loader_base_url / HYVER_LOADER_BASE_URL), so it is hand-maintained in
+  # src/hyver/resources/sessions.py + src/hyver/types/session.py and wired up by
+  # scripts/post_generate.py (Fix 16). Do not add it as a generated resource.
+
 targets:
   python:
     package_name: hyver

@@ -20,6 +20,12 @@ from .runs_create_params import (
     RunCreateParamsMetadata,
 )
 from .runs_create_response import RunCreateResponse
+from .session import (
+    Session,
+    SessionHistoryPagination,
+    SessionHistoryResponse,
+    SessionListResponse,
+)
 from .shared import (
     ApprovalRequiredEvent,
     ContentDeltaEvent,
@@ -79,6 +85,10 @@ __all__ = [
     "RunFailedEvent",
     "RunFailedEventErrorVariant1",
     "RunsApprovalSubmitParams",
+    "Session",
+    "SessionHistoryPagination",
+    "SessionHistoryResponse",
+    "SessionListResponse",
     "ToolProgressEvent",
     "ToolResultEvent",
     "ToolStartEvent",

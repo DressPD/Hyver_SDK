@@ -5,6 +5,7 @@ from .health import AsyncHealthResource, HealthResource
 from .runs import AsyncRunsResource, RunsResource
 from .runs_approval import AsyncRunsApprovalResource, RunsApprovalResource
 from .runs_events import AsyncRunsEventsResource, RunsEventsResource
+from .sessions import AsyncSessionsResource, SessionsResource
 
 __all__ = [
     "AsyncCapabilitiesResource",
@@ -13,10 +14,12 @@ __all__ = [
     "AsyncRunsApprovalResource",
     "AsyncRunsEventsResource",
     "AsyncRunsResource",
+    "AsyncSessionsResource",
     "CapabilitiesResource",
     "ChatCompletionsResource",
     "HealthResource",
     "RunsApprovalResource",
     "RunsEventsResource",
     "RunsResource",
+    "SessionsResource",
 ]
