@@ -60,4 +60,4 @@ jobs:
         run: uv build
 
       - name: Verify import
-        run: uv run python -c "from hermes import HermesSDK, AsyncHermesSDK; print('Import OK')"
+        run: uv run python -c "from hyver import HyverSDK, AsyncHyverSDK; print('Import OK')"
