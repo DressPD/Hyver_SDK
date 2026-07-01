@@ -173,7 +173,7 @@ def main() -> int:
         _sep("6. POST /v1/runs/{run_id}/stop")
         try:
             client.runs.stop(run_id=run_id)
-            print(f"  ✓ Stop sent (may be no-op if already completed)")
+            print("  ✓ Stop sent (may be no-op if already completed)")
             passed += 1
         except APIError as e:
             status = getattr(e, "status_code", None)
@@ -194,7 +194,7 @@ def main() -> int:
     total = passed + failed
     print(f"  {passed}/{total} passed, {failed} failed")
     if errors:
-        print(f"\n  Failures:")
+        print("\n  Failures:")
         for err in errors:
             print(f"    ✗ {err}")
 

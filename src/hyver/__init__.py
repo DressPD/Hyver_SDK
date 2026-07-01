@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version
+
 from ._client import AsyncHyverSDK, HyverSDK
 from ._core._exceptions import (
     APIConnectionError,
@@ -26,4 +28,35 @@ from ._core._sentinels import NOT_GIVEN, NotGiven, Omit, not_given, omit
 HyverSDKError = APIError
 HyverSDKAPIResponse = APIResponse
 
-__all__ = ['HyverSDK', 'AsyncHyverSDK', 'HyverSDKError', 'HyverSDKAPIResponse', 'APIResponse', 'NotGiven', 'not_given', 'NOT_GIVEN', 'Omit', 'omit', 'APIConnectionError', 'APIError', 'APIResponseValidationError', 'APIStatusError', 'APITimeoutError', 'AuthenticationError', 'BadRequestError', 'ConflictError', 'InternalServerError', 'InvalidWebhookSignatureError', 'NotFoundError', 'PermissionDeniedError', 'RateLimitError', 'UnprocessableEntityError']
+try:
+    __version__ = version("hyver-sdk")
+except PackageNotFoundError:  # running from a source tree without install metadata
+    __version__ = "0.0.0"
+
+__all__ = [
+    "__version__",
+    "HyverSDK",
+    "AsyncHyverSDK",
+    "HyverSDKError",
+    "HyverSDKAPIResponse",
+    "APIResponse",
+    "NotGiven",
+    "not_given",
+    "NOT_GIVEN",
+    "Omit",
+    "omit",
+    "APIConnectionError",
+    "APIError",
+    "APIResponseValidationError",
+    "APIStatusError",
+    "APITimeoutError",
+    "AuthenticationError",
+    "BadRequestError",
+    "ConflictError",
+    "InternalServerError",
+    "InvalidWebhookSignatureError",
+    "NotFoundError",
+    "PermissionDeniedError",
+    "RateLimitError",
+    "UnprocessableEntityError",
+]

@@ -78,6 +78,32 @@ def patch_base_client_py() -> None:
         "Fix 2/7/9: add email.utils import",
     )
 
+    # Fix 14: versioned User-Agent (runs after Fix 2, so the stdlib import block
+    # already starts with `import email.utils`).
+    _patch(
+        path,
+        "import email.utils\nimport random\nimport secrets\nimport time\n"
+        "from typing import Any, Optional\n\nimport httpx",
+        "import email.utils\nimport platform\nimport random\nimport secrets\nimport time\n"
+        "from importlib.metadata import PackageNotFoundError, version\n"
+        "from typing import Any, Optional\n\nimport httpx\n\n"
+        "try:\n"
+        '    _SDK_VERSION = version("hyver-sdk")\n'
+        "except PackageNotFoundError:  # running from a source tree without install metadata\n"
+        '    _SDK_VERSION = "0.0.0"\n\n'
+        "# Identifies the SDK (and Python runtime) to the server — aids backend\n"
+        "# observability (X-Ray) and lets the API attribute traffic. Callers may\n"
+        "# override it per request via `extra_headers`.\n"
+        'USER_AGENT = f"hyver-sdk/{_SDK_VERSION} python/{platform.python_version()}"',
+        "Fix 14a: User-Agent constant + SDK version",
+    )
+    _patch(
+        path,
+        'headers = {"Accept": "application/json", **self._auth_headers}',
+        'headers = {"Accept": "application/json", "User-Agent": USER_AGENT, **self._auth_headers}',
+        "Fix 14b: send User-Agent header",
+    )
+
     _patch(
         path,
         "class SyncAPIClient(_BaseClient):\n"
@@ -361,17 +387,28 @@ def patch_streaming_py() -> None:
 
 
 def patch_params_files() -> None:
+    # `Required` and `TypedDict` are imported from typing_extensions (not typing)
+    # so the generated params remain importable on Python 3.10, where
+    # `typing.Required` does not exist (added in 3.11 per PEP 655).
+    typing_import_old = (
+        "from typing import (  # noqa: F401\n"
+        "    Annotated, Any, Dict, List, Literal, Optional, TypedDict, Union,\n"
+        ")"
+    )
+    typing_import_new = (
+        "from typing import (  # noqa: F401\n"
+        "    Annotated, Any, Dict, List, Literal, Optional, Union,\n"
+        ")\n"
+        "from typing_extensions import Required, TypedDict  # noqa: F401"
+    )
+
     chat_path = SRC / "types" / "chat_completions_create_params.py"
     print(f"Patching {chat_path.relative_to(SDK_ROOT)} ...")
     _patch(
         chat_path,
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, TypedDict, Union,\n"
-        ")",
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, Required, TypedDict, Union,\n"
-        ")",
-        "Fix 4a: add Required import",
+        typing_import_old,
+        typing_import_new,
+        "Fix 4a: Required/TypedDict from typing_extensions (py3.10 compat)",
     )
     _patch(
         chat_path,
@@ -384,13 +421,9 @@ def patch_params_files() -> None:
     print(f"Patching {runs_path.relative_to(SDK_ROOT)} ...")
     _patch(
         runs_path,
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, TypedDict, Union,\n"
-        ")",
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, Required, TypedDict, Union,\n"
-        ")",
-        "Fix 4c: add Required import",
+        typing_import_old,
+        typing_import_new,
+        "Fix 4c: Required/TypedDict from typing_extensions (py3.10 compat)",
     )
     _patch(
         runs_path,
@@ -403,13 +436,9 @@ def patch_params_files() -> None:
     print(f"Patching {approval_path.relative_to(SDK_ROOT)} ...")
     _patch(
         approval_path,
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, TypedDict, Union,\n"
-        ")",
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, Required, TypedDict, Union,\n"
-        ")",
-        "Fix 4e: add Required import",
+        typing_import_old,
+        typing_import_new,
+        "Fix 4e: Required/TypedDict from typing_extensions (py3.10 compat)",
     )
     _patch(
         approval_path,
@@ -465,6 +494,117 @@ def patch_exceptions_py() -> None:
         "    msg = server_msg or f\"Error code: {response.status_code}\"\n",
         "Fix 6: extract error message from response body",
     )
+
+
+def patch_version_exports() -> None:
+    path = SRC / "__init__.py"
+    print(f"Patching {path.relative_to(SDK_ROOT)} ...")
+    _patch(
+        path,
+        "from __future__ import annotations\n\nfrom ._client import AsyncHyverSDK, HyverSDK",
+        "from __future__ import annotations\n\n"
+        "from importlib.metadata import PackageNotFoundError, version\n\n"
+        "from ._client import AsyncHyverSDK, HyverSDK",
+        "Fix 15a: import importlib.metadata for __version__",
+    )
+    _patch(
+        path,
+        "HyverSDKError = APIError\nHyverSDKAPIResponse = APIResponse\n\n__all__ = [\n    \"HyverSDK\",",
+        "HyverSDKError = APIError\nHyverSDKAPIResponse = APIResponse\n\n"
+        "try:\n"
+        '    __version__ = version("hyver-sdk")\n'
+        "except PackageNotFoundError:  # running from a source tree without install metadata\n"
+        '    __version__ = "0.0.0"\n\n'
+        "__all__ = [\n    \"__version__\",\n    \"HyverSDK\",",
+        "Fix 15b: expose __version__",
+    )
+
+
+def patch_sessions_wiring() -> None:
+    """Wire the hand-maintained loader-backed `sessions` resource into the
+    generated package. `resources/sessions.py` and `types/session.py` are not
+    stainful-generated (the loader is a separate service/base URL), so they
+    survive regeneration; only the generated __init__/_client glue needs
+    re-applying here. All edits are idempotent."""
+    # resources/__init__.py — append import + a complete __all__ (stainful emits
+    # no __all__ for resources). Order-independent so it's robust to import sort.
+    res_init = SRC / "resources" / "__init__.py"
+    print(f"Patching {res_init.relative_to(SDK_ROOT)} ...")
+    text = res_init.read_text()
+    if "from .sessions import" not in text:
+        text = text.rstrip() + "\nfrom .sessions import AsyncSessionsResource, SessionsResource\n"
+        print("  [patch] Fix 16a: resources import sessions")
+    if "__all__" not in text:
+        names = [
+            "AsyncCapabilitiesResource", "AsyncChatCompletionsResource", "AsyncHealthResource",
+            "AsyncRunsApprovalResource", "AsyncRunsEventsResource", "AsyncRunsResource",
+            "AsyncSessionsResource", "CapabilitiesResource", "ChatCompletionsResource",
+            "HealthResource", "RunsApprovalResource", "RunsEventsResource", "RunsResource",
+            "SessionsResource",
+        ]
+        text += "\n__all__ = [\n" + "".join(f'    "{n}",\n' for n in names) + "]\n"
+        print("  [patch] Fix 16b: resources __all__")
+    res_init.write_text(text)
+
+    # types/__init__.py — append import + extend the existing __all__.
+    types_init = SRC / "types" / "__init__.py"
+    print(f"Patching {types_init.relative_to(SDK_ROOT)} ...")
+    text = types_init.read_text()
+    if "from .session import" not in text:
+        text = text.rstrip() + (
+            "\nfrom .session import (\n"
+            "    Session,\n"
+            "    SessionHistoryPagination,\n"
+            "    SessionHistoryResponse,\n"
+            "    SessionListResponse,\n"
+            ")\n"
+            '\n__all__ += [\n'
+            '    "Session",\n'
+            '    "SessionHistoryPagination",\n'
+            '    "SessionHistoryResponse",\n'
+            '    "SessionListResponse",\n'
+            "]\n"
+        )
+        types_init.write_text(text)
+        print("  [patch] Fix 16c: types import + __all__ extend for session models")
+
+    # _client.py — add loader_base_url option, store it, attach the resource.
+    # Each insertion is independently guarded so re-runs (the Makefile invokes
+    # post_generate twice) never duplicate.
+    client_path = SRC / "_client.py"
+    print(f"Patching {client_path.relative_to(SDK_ROOT)} ...")
+    text = client_path.read_text()
+    loader_assign = (
+        "        # Loader service (session CRUD/history) — different base URL, same auth.\n"
+        "        self._loader_base_url = "
+        '(loader_base_url or os.environ.get("HYVER_LOADER_BASE_URL") or "").rstrip("/") or None\n'
+    )
+    if "loader_base_url: str | None = None," not in text:
+        # identical kwarg line in both Sync + Async __init__ → replace all.
+        text = text.replace(
+            "        base_url: str | httpx.URL | None = None,\n",
+            "        base_url: str | httpx.URL | None = None,\n        loader_base_url: str | None = None,\n",
+        )
+    if "self._loader_base_url" not in text:
+        for health_line in (
+            "        self.health = resources.HealthResource(self)\n",
+            "        self.health = resources.AsyncHealthResource(self)\n",
+        ):
+            text = text.replace(health_line, loader_assign + health_line, 1)
+    for anno, attr in (
+        ("resources.RunsApprovalResource", "SessionsResource"),
+        ("resources.AsyncRunsApprovalResource", "AsyncSessionsResource"),
+    ):
+        if f"sessions: resources.{attr}" not in text:
+            text = text.replace(f"    runs_approval: {anno}\n", f"    runs_approval: {anno}\n    sessions: resources.{attr}\n", 1)
+        if f"self.sessions = resources.{attr}(self)" not in text:
+            text = text.replace(
+                f"        self.runs_approval = {anno}(self)\n",
+                f"        self.runs_approval = {anno}(self)\n        self.sessions = resources.{attr}(self)\n",
+                1,
+            )
+    client_path.write_text(text)
+    print("  [patch] Fix 16d: _client.py loader_base_url + sessions resource")
 
 
 def patch_missing_bugfixes() -> None:
@@ -721,9 +861,17 @@ def patch_runs_resources() -> None:
     ):
         path = SRC / filename
         print(f"Patching {path.relative_to(SDK_ROOT)} ...")
+        text = path.read_text()
         for old, new in paths_to_fix:
-            label = f"Fix 8: URL-encode run_id in {filename} ({old[:40]!r})"
-            _patch(path, old, new, label)
+            # replace ALL occurrences — both the sync and async methods share the
+            # same unencoded path literal, so a single-shot replace would leave the
+            # async variant unquoted.
+            if old in text:
+                text = text.replace(old, new)
+                print(f"  [patch] Fix 8: URL-encode run_id in {filename} ({old[:40]!r})")
+            else:
+                print(f"  [skip]  Fix 8: {filename} ({old[:40]!r}) — already patched")
+        path.write_text(text)
 
 
 def main() -> None:
@@ -734,6 +882,8 @@ def main() -> None:
     patch_params_files()
     patch_runs_create_response_py()
     patch_exceptions_py()
+    patch_version_exports()
+    patch_sessions_wiring()
     patch_missing_bugfixes()
     patch_runs_resources()
     print("=== done ===")

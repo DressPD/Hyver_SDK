@@ -4,7 +4,6 @@ from __future__ import annotations
 from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
 from functools import cached_property
-from typing import Dict
 
 import httpx
 
@@ -38,18 +37,18 @@ class CapabilitiesResource(SyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = not_given,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """Returns available runtime capabilities. Proxied directly to the Hermes
-upstream service. No authentication required."""
+        upstream service. No authentication required."""
         return self._get(
-            f"/v1/capabilities",
+            "/v1/capabilities",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
                 extra_body=extra_body,
                 timeout=timeout,
             ),
-            cast_to=Dict[str, object],
+            cast_to=dict[str, object],
         )
 
 
@@ -69,18 +68,18 @@ class AsyncCapabilitiesResource(AsyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = not_given,
-    ) -> Dict[str, object]:
+    ) -> dict[str, object]:
         """Returns available runtime capabilities. Proxied directly to the Hermes
-upstream service. No authentication required."""
+        upstream service. No authentication required."""
         return await self._get(
-            f"/v1/capabilities",
+            "/v1/capabilities",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
                 extra_body=extra_body,
                 timeout=timeout,
             ),
-            cast_to=Dict[str, object],
+            cast_to=dict[str, object],
         )
 
 

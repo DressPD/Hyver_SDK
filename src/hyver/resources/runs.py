@@ -4,11 +4,11 @@ from __future__ import annotations
 from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
 from functools import cached_property
-from typing import List
 from urllib.parse import quote
 
 import httpx
 
+from hyver._core._models import to_jsonable
 from hyver._core._request_options import make_request_options
 from hyver._core._resource import AsyncAPIResource, SyncAPIResource
 from hyver._core._response import (
@@ -19,8 +19,12 @@ from hyver._core._response import (
 )
 from hyver._core._sentinels import NotGiven, not_given
 from hyver._core._types import Body, FileTypes, Headers, Query  # noqa: F401
-from hyver._core._models import to_jsonable
-from hyver.types import RunCreateParamsConversationHistory, RunCreateParamsImages, RunCreateParamsMetadata, RunCreateResponse
+from hyver.types import (
+    RunCreateParamsConversationHistory,
+    RunCreateParamsImages,
+    RunCreateParamsMetadata,
+    RunCreateResponse,
+)
 
 __all__ = ["RunsResource", "AsyncRunsResource"]
 
@@ -40,18 +44,18 @@ class RunsResource(SyncAPIResource):
         input: str,
         session_id: str,
         instructions: str | NotGiven = not_given,
-        images: List[RunCreateParamsImages] | NotGiven = not_given,
-        conversation_history: List[RunCreateParamsConversationHistory] | NotGiven = not_given,
+        images: list[RunCreateParamsImages] | NotGiven = not_given,
+        conversation_history: list[RunCreateParamsConversationHistory] | NotGiven = not_given,
         metadata: RunCreateParamsMetadata | NotGiven = not_given,
-        tools: List[str] | NotGiven = not_given,
+        tools: list[str] | NotGiven = not_given,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = not_given,
     ) -> RunCreateResponse:
         """Creates a new agent run with the given input and configuration. Returns
-a run ID that can be used to stream events, submit approvals, or stop
-the run."""
+        a run ID that can be used to stream events, submit approvals, or stop
+        the run."""
         _body = {
             "input": input,
             "session_id": session_id,
@@ -63,7 +67,7 @@ the run."""
         }
         _body = {k: v for k, v in _body.items() if v is not not_given}
         return self._post(
-            f"/v1/runs",
+            "/v1/runs",
             body=to_jsonable(_body),
             options=make_request_options(
                 extra_headers=extra_headers,
@@ -111,18 +115,18 @@ class AsyncRunsResource(AsyncAPIResource):
         input: str,
         session_id: str,
         instructions: str | NotGiven = not_given,
-        images: List[RunCreateParamsImages] | NotGiven = not_given,
-        conversation_history: List[RunCreateParamsConversationHistory] | NotGiven = not_given,
+        images: list[RunCreateParamsImages] | NotGiven = not_given,
+        conversation_history: list[RunCreateParamsConversationHistory] | NotGiven = not_given,
         metadata: RunCreateParamsMetadata | NotGiven = not_given,
-        tools: List[str] | NotGiven = not_given,
+        tools: list[str] | NotGiven = not_given,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = not_given,
     ) -> RunCreateResponse:
         """Creates a new agent run with the given input and configuration. Returns
-a run ID that can be used to stream events, submit approvals, or stop
-the run."""
+        a run ID that can be used to stream events, submit approvals, or stop
+        the run."""
         _body = {
             "input": input,
             "session_id": session_id,
@@ -134,7 +138,7 @@ the run."""
         }
         _body = {k: v for k, v in _body.items() if v is not not_given}
         return await self._post(
-            f"/v1/runs",
+            "/v1/runs",
             body=to_jsonable(_body),
             options=make_request_options(
                 extra_headers=extra_headers,
@@ -156,7 +160,7 @@ the run."""
     ) -> object:
         """Signals the runtime to stop the specified run."""
         return await self._post(
-            f"/v1/runs/{run_id}/stop",
+            f"/v1/runs/{quote(run_id, safe='')}/stop",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,

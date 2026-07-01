@@ -2,11 +2,96 @@
 from __future__ import annotations
 
 from .chat_completions_create_params import ChatCompletionCreateParams, ChatCompletionCreateParamsMessages
-from .chat_completions_create_response import ChatCompletionCreateEvent, ChatCompletionCreateEventChoice, ChatCompletionCreateEventChoiceDelta, ChatCompletionCreateResponse, ChatCompletionCreateResponseChoice, ChatCompletionCreateResponseChoiceMessage, ChatCompletionCreateResponseUsage
+from .chat_completions_create_response import (
+    ChatCompletionCreateEvent,
+    ChatCompletionCreateEventChoice,
+    ChatCompletionCreateEventChoiceDelta,
+    ChatCompletionCreateResponse,
+    ChatCompletionCreateResponseChoice,
+    ChatCompletionCreateResponseChoiceMessage,
+    ChatCompletionCreateResponseUsage,
+)
 from .health_check_response import HealthCheckResponse
 from .runs_approval_submit_params import RunsApprovalSubmitParams
-from .runs_create_params import RunCreateParams, RunCreateParamsConversationHistory, RunCreateParamsImages, RunCreateParamsMetadata
+from .runs_create_params import (
+    RunCreateParams,
+    RunCreateParamsConversationHistory,
+    RunCreateParamsImages,
+    RunCreateParamsMetadata,
+)
 from .runs_create_response import RunCreateResponse
-from .shared import ApprovalRequiredEvent, ContentDeltaEvent, DoneEvent, ErrorEvent, ErrorEventErrorVariant1, OutputItem, OutputItemAddedEvent, OutputItemDoneEvent, OutputItemOutputVariant1, ReasoningEvent, ResponseCompletedEvent, ResponseCreatedEvent, ResponseFailedEvent, ResponseFailedEventError, RunCompletedEvent, RunFailedEvent, RunFailedEventErrorVariant1, ToolProgressEvent, ToolResultEvent, ToolStartEvent, UsageEvent, UsageInfo
+from .session import (
+    Session,
+    SessionHistoryPagination,
+    SessionHistoryResponse,
+    SessionListResponse,
+)
+from .shared import (
+    ApprovalRequiredEvent,
+    ContentDeltaEvent,
+    DoneEvent,
+    ErrorEvent,
+    ErrorEventErrorVariant1,
+    OutputItem,
+    OutputItemAddedEvent,
+    OutputItemDoneEvent,
+    OutputItemOutputVariant1,
+    ReasoningEvent,
+    ResponseCompletedEvent,
+    ResponseCreatedEvent,
+    ResponseFailedEvent,
+    ResponseFailedEventError,
+    RunCompletedEvent,
+    RunFailedEvent,
+    RunFailedEventErrorVariant1,
+    ToolProgressEvent,
+    ToolResultEvent,
+    ToolStartEvent,
+    UsageEvent,
+    UsageInfo,
+)
 
-__all__ = ['ApprovalRequiredEvent', 'ChatCompletionCreateEvent', 'ChatCompletionCreateEventChoice', 'ChatCompletionCreateEventChoiceDelta', 'ChatCompletionCreateParams', 'ChatCompletionCreateParamsMessages', 'ChatCompletionCreateResponse', 'ChatCompletionCreateResponseChoice', 'ChatCompletionCreateResponseChoiceMessage', 'ChatCompletionCreateResponseUsage', 'ContentDeltaEvent', 'DoneEvent', 'ErrorEvent', 'ErrorEventErrorVariant1', 'HealthCheckResponse', 'OutputItem', 'OutputItemAddedEvent', 'OutputItemDoneEvent', 'OutputItemOutputVariant1', 'ReasoningEvent', 'ResponseCompletedEvent', 'ResponseCreatedEvent', 'ResponseFailedEvent', 'ResponseFailedEventError', 'RunCompletedEvent', 'RunCreateParams', 'RunCreateParamsConversationHistory', 'RunCreateParamsImages', 'RunCreateParamsMetadata', 'RunCreateResponse', 'RunFailedEvent', 'RunFailedEventErrorVariant1', 'RunsApprovalSubmitParams', 'ToolProgressEvent', 'ToolResultEvent', 'ToolStartEvent', 'UsageEvent', 'UsageInfo']
+__all__ = [
+    "ApprovalRequiredEvent",
+    "ChatCompletionCreateEvent",
+    "ChatCompletionCreateEventChoice",
+    "ChatCompletionCreateEventChoiceDelta",
+    "ChatCompletionCreateParams",
+    "ChatCompletionCreateParamsMessages",
+    "ChatCompletionCreateResponse",
+    "ChatCompletionCreateResponseChoice",
+    "ChatCompletionCreateResponseChoiceMessage",
+    "ChatCompletionCreateResponseUsage",
+    "ContentDeltaEvent",
+    "DoneEvent",
+    "ErrorEvent",
+    "ErrorEventErrorVariant1",
+    "HealthCheckResponse",
+    "OutputItem",
+    "OutputItemAddedEvent",
+    "OutputItemDoneEvent",
+    "OutputItemOutputVariant1",
+    "ReasoningEvent",
+    "ResponseCompletedEvent",
+    "ResponseCreatedEvent",
+    "ResponseFailedEvent",
+    "ResponseFailedEventError",
+    "RunCompletedEvent",
+    "RunCreateParams",
+    "RunCreateParamsConversationHistory",
+    "RunCreateParamsImages",
+    "RunCreateParamsMetadata",
+    "RunCreateResponse",
+    "RunFailedEvent",
+    "RunFailedEventErrorVariant1",
+    "RunsApprovalSubmitParams",
+    "Session",
+    "SessionHistoryPagination",
+    "SessionHistoryResponse",
+    "SessionListResponse",
+    "ToolProgressEvent",
+    "ToolResultEvent",
+    "ToolStartEvent",
+    "UsageEvent",
+    "UsageInfo",
+]

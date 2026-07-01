@@ -3,11 +3,12 @@ from __future__ import annotations
 
 from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
-from typing import (  # noqa: F401
-    Annotated, Any, Dict, List, Literal, Optional, Required, TypedDict, Union,
+from typing import (
+    Literal,
 )
 
 from pydantic import Field  # noqa: F401
+from typing_extensions import Required, TypedDict  # noqa: F401
 
 from .._core._models import BaseModel  # noqa: F401
 from .._core._types import FileTypes  # noqa: F401
@@ -15,15 +16,15 @@ from .._utils import PropertyInfo  # noqa: F401
 
 
 class ChatCompletionCreateParamsMessages(BaseModel):
-    role: Literal['system', 'user', 'assistant']
+    role: Literal["system", "user", "assistant"]
     content: str
 
 
 class ChatCompletionCreateParams(TypedDict, total=False):
     model: str
-    messages: Required[List[ChatCompletionCreateParamsMessages]]
+    messages: Required[list[ChatCompletionCreateParamsMessages]]
     temperature: float
     max_tokens: int
     stream: bool
     top_p: float
-    stop: Union[List[str], str]
+    stop: list[str] | str

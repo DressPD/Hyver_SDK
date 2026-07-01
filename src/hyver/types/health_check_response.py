@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
-from typing import (  # noqa: F401
-    Annotated, Any, Dict, List, Literal, Optional, TypedDict, Union,
+from typing import (
+    Literal,
 )
 
 from pydantic import Field  # noqa: F401
@@ -15,4 +15,4 @@ from .._utils import PropertyInfo  # noqa: F401
 
 
 class HealthCheckResponse(BaseModel):
-    status: Literal['healthy']
+    status: Literal["healthy"]

@@ -3,11 +3,12 @@ from __future__ import annotations
 
 from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
-from typing import (  # noqa: F401
-    Annotated, Any, Dict, List, Literal, Optional, Required, TypedDict, Union,
+from typing import (
+    Literal,
 )
 
 from pydantic import Field  # noqa: F401
+from typing_extensions import Required, TypedDict  # noqa: F401
 
 from .._core._models import BaseModel  # noqa: F401
 from .._core._types import FileTypes  # noqa: F401
@@ -17,26 +18,26 @@ from .._utils import PropertyInfo  # noqa: F401
 class RunCreateParamsImages(BaseModel):
     base64: str
     mime_type: str = Field(alias="mimeType")
-    file_name: Optional[str] = Field(default=None, alias="fileName")
-    size_bytes: Optional[int] = Field(default=None, alias="sizeBytes")
+    file_name: str | None = Field(default=None, alias="fileName")
+    size_bytes: int | None = Field(default=None, alias="sizeBytes")
 
 
 class RunCreateParamsConversationHistory(BaseModel):
-    role: Literal['user', 'assistant', 'system']
+    role: Literal["user", "assistant", "system"]
     content: str
 
 
 class RunCreateParamsMetadata(BaseModel):
-    reasoning: Optional[bool] = None
-    search_enabled: Optional[bool] = None
-    human_control: Optional[bool] = None
+    reasoning: bool | None = None
+    search_enabled: bool | None = None
+    human_control: bool | None = None
 
 
 class RunCreateParams(TypedDict, total=False):
     input: Required[str]
     session_id: Required[str]
     instructions: str
-    images: List[RunCreateParamsImages]
-    conversation_history: List[RunCreateParamsConversationHistory]
+    images: list[RunCreateParamsImages]
+    conversation_history: list[RunCreateParamsConversationHistory]
     metadata: RunCreateParamsMetadata
-    tools: List[str]
+    tools: list[str]

@@ -5,9 +5,9 @@ import os
 
 import httpx
 
+from . import resources
 from ._core._base_client import AsyncAPIClient, SyncAPIClient
 from ._core._sentinels import NotGiven, not_given
-from . import resources
 
 __all__ = ["HyverSDK", "AsyncHyverSDK"]
 
@@ -21,12 +21,14 @@ class HyverSDK(SyncAPIClient):
     runs: resources.RunsResource
     runs_events: resources.RunsEventsResource
     runs_approval: resources.RunsApprovalResource
+    sessions: resources.SessionsResource
 
     def __init__(
         self,
         *,
         api_key: str | None = None,
         base_url: str | httpx.URL | None = None,
+        loader_base_url: str | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = not_given,
         max_retries: int = 2,
         http_client: httpx.Client | None = None,
@@ -45,12 +47,15 @@ class HyverSDK(SyncAPIClient):
             http_client=http_client,
             auth_headers={"Authorization": f"Bearer {api_key}"},
         )
+        # Loader service (session CRUD/history) — different base URL, same auth.
+        self._loader_base_url = (loader_base_url or os.environ.get("HYVER_LOADER_BASE_URL") or "").rstrip("/") or None
         self.health = resources.HealthResource(self)
         self.capabilities = resources.CapabilitiesResource(self)
         self.chat_completions = resources.ChatCompletionsResource(self)
         self.runs = resources.RunsResource(self)
         self.runs_events = resources.RunsEventsResource(self)
         self.runs_approval = resources.RunsApprovalResource(self)
+        self.sessions = resources.SessionsResource(self)
 
 
 class AsyncHyverSDK(AsyncAPIClient):
@@ -60,12 +65,14 @@ class AsyncHyverSDK(AsyncAPIClient):
     runs: resources.AsyncRunsResource
     runs_events: resources.AsyncRunsEventsResource
     runs_approval: resources.AsyncRunsApprovalResource
+    sessions: resources.AsyncSessionsResource
 
     def __init__(
         self,
         *,
         api_key: str | None = None,
         base_url: str | httpx.URL | None = None,
+        loader_base_url: str | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = not_given,
         max_retries: int = 2,
         http_client: httpx.AsyncClient | None = None,
@@ -84,9 +91,12 @@ class AsyncHyverSDK(AsyncAPIClient):
             http_client=http_client,
             auth_headers={"Authorization": f"Bearer {api_key}"},
         )
+        # Loader service (session CRUD/history) — different base URL, same auth.
+        self._loader_base_url = (loader_base_url or os.environ.get("HYVER_LOADER_BASE_URL") or "").rstrip("/") or None
         self.health = resources.AsyncHealthResource(self)
         self.capabilities = resources.AsyncCapabilitiesResource(self)
         self.chat_completions = resources.AsyncChatCompletionsResource(self)
         self.runs = resources.AsyncRunsResource(self)
         self.runs_events = resources.AsyncRunsEventsResource(self)
         self.runs_approval = resources.AsyncRunsApprovalResource(self)
+        self.sessions = resources.AsyncSessionsResource(self)
