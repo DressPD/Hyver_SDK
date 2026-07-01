@@ -8,6 +8,7 @@ from urllib.parse import quote
 
 import httpx
 
+from hyver._core._models import to_jsonable
 from hyver._core._request_options import make_request_options
 from hyver._core._resource import AsyncAPIResource, SyncAPIResource
 from hyver._core._response import (
@@ -18,7 +19,6 @@ from hyver._core._response import (
 )
 from hyver._core._sentinels import NotGiven, not_given
 from hyver._core._types import Body, FileTypes, Headers, Query  # noqa: F401
-from hyver._core._models import to_jsonable
 
 __all__ = ["RunsApprovalResource", "AsyncRunsApprovalResource"]
 
@@ -43,7 +43,7 @@ class RunsApprovalResource(SyncAPIResource):
         timeout: float | httpx.Timeout | None | NotGiven = not_given,
     ) -> object:
         """Approves or rejects a pending action during a run that has
-human-in-the-loop control enabled."""
+        human-in-the-loop control enabled."""
         _body = {
             "approved": approved,
         }
@@ -81,13 +81,13 @@ class AsyncRunsApprovalResource(AsyncAPIResource):
         timeout: float | httpx.Timeout | None | NotGiven = not_given,
     ) -> object:
         """Approves or rejects a pending action during a run that has
-human-in-the-loop control enabled."""
+        human-in-the-loop control enabled."""
         _body = {
             "approved": approved,
         }
         _body = {k: v for k, v in _body.items() if v is not not_given}
         return await self._post(
-            f"/v1/runs/{run_id}/approval",
+            f"/v1/runs/{quote(run_id, safe='')}/approval",
             body=to_jsonable(_body),
             options=make_request_options(
                 extra_headers=extra_headers,

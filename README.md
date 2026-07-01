@@ -29,13 +29,51 @@ cd Hyver_SDK
 uv sync --all-extras
 ```
 
+## Authentication
+
+The Hyver Runtime authenticates every request with a **Cognito JWT** passed as a
+Bearer token (`Authorization: Bearer <jwt>`). The SDK adds this header for you —
+you just supply the token as `api_key`.
+
+**Use the Cognito _ID token_, not the access token.** The runtime validates the
+token's `aud` (audience) claim against the Cognito app-client id, and only the ID
+token carries that claim. An access token will be rejected with
+`AuthenticationError` (401).
+
+Two endpoints are public and need no token: `GET /health`
+(`client.health.check()`) and `GET /v1/capabilities`
+(`client.capabilities.get()`). Everything else requires a valid token.
+
+### Obtaining an ID token
+
+Tokens are short-lived (~1 hour); mint a fresh one and refresh as needed. Any
+Cognito auth flow works — the browser app uses Amplify. For scripts/services,
+`USER_PASSWORD_AUTH` via boto3 is the simplest:
+
+```python
+import boto3
+
+def get_id_token(*, region: str, client_id: str, email: str, password: str) -> str:
+    cognito = boto3.client("cognito-idp", region_name=region)
+    resp = cognito.initiate_auth(
+        ClientId=client_id,
+        AuthFlow="USER_PASSWORD_AUTH",
+        AuthParameters={"USERNAME": email, "PASSWORD": password},
+    )
+    return resp["AuthenticationResult"]["IdToken"]  # ← ID token, not AccessToken
+```
+
+> `USER_PASSWORD_AUTH` must be enabled on the app client. Accounts with MFA or a
+> `NEW_PASSWORD_REQUIRED` challenge return a challenge instead of tokens and need
+> the corresponding follow-up call.
+
 ## Quick Start
 
 ```python
 from hyver import HyverSDK
 
 client = HyverSDK(
-    api_key="your-cognito-jwt-token",
+    api_key="your-cognito-id-token",  # JWT ID token (see Authentication above)
     base_url="https://your-hyver-endpoint.example.com",
 )
 
@@ -90,7 +128,7 @@ from hyver import AsyncHyverSDK
 
 async def main():
     async with AsyncHyverSDK(
-        api_key="your-cognito-jwt-token",
+        api_key="your-cognito-id-token",
         base_url="https://your-hyver-endpoint.example.com",
     ) as client:
         run = await client.runs.create(
@@ -112,7 +150,7 @@ asyncio.run(main())
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `HYVER_API_KEY` | Cognito JWT token | (required) |
+| `HYVER_API_KEY` | Cognito JWT **ID token** | (required) |
 | `HYVER_BASE_URL` | Hyver runtime URL | `http://localhost:8643` |
 
 ```bash
@@ -241,6 +279,17 @@ Hyver_SDK/
 4. Run `make check` to verify
 
 ## Changelog
+
+### Unreleased
+
+- Fix Python 3.10 compatibility: import `Required`/`TypedDict` from
+  `typing_extensions` instead of `typing` (`typing.Required` is 3.11+)
+- Fix async `runs.stop()` / `runs_approval.submit()` to URL-encode `run_id`
+  (previously only the sync variants were encoded)
+- Documented authentication: Cognito **ID token** required, with a token-minting
+  example and the list of public (no-auth) endpoints
+- Green `make check`: modernized generated annotations (PEP 585/604), added
+  `__all__` to `resources`, and scoped mypy strictness for generated code
 
 ### v0.1.0 (2026-05-25)
 

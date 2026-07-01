@@ -58,6 +58,21 @@ strict = true
 warn_return_any = true
 warn_unused_configs = true
 
+# Generated transport/runtime infrastructure. Excluded from ruff too (see
+# extend-exclude above). These are emitted by stainful + post-patched; their
+# type completeness is the generator's concern, not hand-maintained here.
+[[tool.mypy.overrides]]
+module = ["hyver._core.*", "hyver._utils"]
+ignore_errors = true
+
+# Generated resource clients: `no-any-return` fires because they return the
+# transport `_request` (typed Any); `comparison-overlap` fires on the generated
+# `v is not not_given` body-filter when a request body has only required fields.
+# Both are artifacts of the generated pattern, not real defects.
+[[tool.mypy.overrides]]
+module = ["hyver.resources.*"]
+disable_error_code = ["no-any-return", "comparison-overlap"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

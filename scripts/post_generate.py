@@ -361,17 +361,28 @@ def patch_streaming_py() -> None:
 
 
 def patch_params_files() -> None:
+    # `Required` and `TypedDict` are imported from typing_extensions (not typing)
+    # so the generated params remain importable on Python 3.10, where
+    # `typing.Required` does not exist (added in 3.11 per PEP 655).
+    typing_import_old = (
+        "from typing import (  # noqa: F401\n"
+        "    Annotated, Any, Dict, List, Literal, Optional, TypedDict, Union,\n"
+        ")"
+    )
+    typing_import_new = (
+        "from typing import (  # noqa: F401\n"
+        "    Annotated, Any, Dict, List, Literal, Optional, Union,\n"
+        ")\n"
+        "from typing_extensions import Required, TypedDict  # noqa: F401"
+    )
+
     chat_path = SRC / "types" / "chat_completions_create_params.py"
     print(f"Patching {chat_path.relative_to(SDK_ROOT)} ...")
     _patch(
         chat_path,
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, TypedDict, Union,\n"
-        ")",
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, Required, TypedDict, Union,\n"
-        ")",
-        "Fix 4a: add Required import",
+        typing_import_old,
+        typing_import_new,
+        "Fix 4a: Required/TypedDict from typing_extensions (py3.10 compat)",
     )
     _patch(
         chat_path,
@@ -384,13 +395,9 @@ def patch_params_files() -> None:
     print(f"Patching {runs_path.relative_to(SDK_ROOT)} ...")
     _patch(
         runs_path,
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, TypedDict, Union,\n"
-        ")",
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, Required, TypedDict, Union,\n"
-        ")",
-        "Fix 4c: add Required import",
+        typing_import_old,
+        typing_import_new,
+        "Fix 4c: Required/TypedDict from typing_extensions (py3.10 compat)",
     )
     _patch(
         runs_path,
@@ -403,13 +410,9 @@ def patch_params_files() -> None:
     print(f"Patching {approval_path.relative_to(SDK_ROOT)} ...")
     _patch(
         approval_path,
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, TypedDict, Union,\n"
-        ")",
-        "from typing import (  # noqa: F401\n"
-        "    Annotated, Any, Dict, List, Literal, Optional, Required, TypedDict, Union,\n"
-        ")",
-        "Fix 4e: add Required import",
+        typing_import_old,
+        typing_import_new,
+        "Fix 4e: Required/TypedDict from typing_extensions (py3.10 compat)",
     )
     _patch(
         approval_path,
@@ -721,9 +724,17 @@ def patch_runs_resources() -> None:
     ):
         path = SRC / filename
         print(f"Patching {path.relative_to(SDK_ROOT)} ...")
+        text = path.read_text()
         for old, new in paths_to_fix:
-            label = f"Fix 8: URL-encode run_id in {filename} ({old[:40]!r})"
-            _patch(path, old, new, label)
+            # replace ALL occurrences — both the sync and async methods share the
+            # same unencoded path literal, so a single-shot replace would leave the
+            # async variant unquoted.
+            if old in text:
+                text = text.replace(old, new)
+                print(f"  [patch] Fix 8: URL-encode run_id in {filename} ({old[:40]!r})")
+            else:
+                print(f"  [skip]  Fix 8: {filename} ({old[:40]!r}) — already patched")
+        path.write_text(text)
 
 
 def main() -> None:

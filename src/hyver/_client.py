@@ -5,9 +5,9 @@ import os
 
 import httpx
 
+from . import resources
 from ._core._base_client import AsyncAPIClient, SyncAPIClient
 from ._core._sentinels import NotGiven, not_given
-from . import resources
 
 __all__ = ["HyverSDK", "AsyncHyverSDK"]
 
