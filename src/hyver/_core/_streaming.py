@@ -9,7 +9,8 @@ must ship.
 from __future__ import annotations
 
 import json
-from typing import AsyncIterator, Generic, Iterator, Optional, TypeVar
+from collections.abc import AsyncIterator, Iterator
+from typing import Generic, TypeVar
 
 import httpx
 
@@ -20,7 +21,7 @@ __all__ = ["Stream", "AsyncStream", "ServerSentEvent"]
 
 class ServerSentEvent:
     def __init__(
-        self, *, event: Optional[str], data: str, id: Optional[str], retry: Optional[int]
+        self, *, event: str | None, data: str, id: str | None, retry: int | None
     ) -> None:
         self.event = event
         self.data = data
@@ -35,12 +36,12 @@ class _SSEDecoder:
     """Incremental SSE line decoder (handles multi-line `data:` and blanks)."""
 
     def __init__(self) -> None:
-        self._event: Optional[str] = None
+        self._event: str | None = None
         self._data: list[str] = []
-        self._id: Optional[str] = None
-        self._retry: Optional[int] = None
+        self._id: str | None = None
+        self._retry: int | None = None
 
-    def flush(self) -> Optional[ServerSentEvent]:
+    def flush(self) -> ServerSentEvent | None:
         if not self._data and self._event is None:
             return None
         sse = ServerSentEvent(
@@ -52,7 +53,7 @@ class _SSEDecoder:
         self._event, self._data, self._id, self._retry = None, [], None, None
         return sse
 
-    def decode(self, line: str) -> Optional[ServerSentEvent]:
+    def decode(self, line: str) -> ServerSentEvent | None:
         if not line:  # dispatch on blank line
             if not self._data and self._event is None:
                 return None

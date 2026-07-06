@@ -7,8 +7,6 @@ catchable names are the cross-SDK drop-in contract.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import httpx
 
 __all__ = [
@@ -42,9 +40,9 @@ class APIError(Exception):
     message: str
     request: httpx.Request
     body: object | None
-    code: Optional[str]
-    param: Optional[str]
-    type: Optional[str]
+    code: str | None
+    param: str | None
+    type: str | None
 
     def __init__(
         self, message: str, request: httpx.Request, *, body: object | None = None
@@ -80,7 +78,7 @@ class APIStatusError(APIError):
 
     response: httpx.Response
     status_code: int
-    request_id: Optional[str]
+    request_id: str | None
 
     def __init__(
         self, message: str, *, response: httpx.Response, body: object | None
@@ -141,7 +139,7 @@ class InternalServerError(APIStatusError):
 
 def status_error_for(response: httpx.Response, body: object | None) -> APIStatusError:
     """Map an HTTP status to the precise typed exception (RESEARCH §4 #4)."""
-    server_msg: Optional[str] = None
+    server_msg: str | None = None
     if isinstance(body, dict):
         err = body.get("error")
         if isinstance(err, dict):

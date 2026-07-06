@@ -8,7 +8,7 @@ wire name (`currentTime`) differ from the idiomatic Python name
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import pydantic
 
@@ -119,7 +119,7 @@ class BaseModel(pydantic.BaseModel):
     )
 
     # Set by the client after construction; not a wire field.
-    _request_id: Optional[str] = pydantic.PrivateAttr(default=None)
+    _request_id: str | None = pydantic.PrivateAttr(default=None)
 
     # --- Stainless drop-in helpers ----------------------------------------
     # `.to_dict()` / `.to_json()` are the symbols Stainless customers reach
