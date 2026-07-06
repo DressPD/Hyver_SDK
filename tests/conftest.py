@@ -9,7 +9,7 @@ from hyver import AsyncHyverSDK, HyverSDK
 
 @pytest.fixture
 def base_url() -> str:
-    return "http://test.hermes.local:8643"
+    return "http://test.hyver.local:8643"
 
 
 @pytest.fixture

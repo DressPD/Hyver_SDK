@@ -24,7 +24,8 @@ from __future__ import annotations
 
 import contextvars
 import functools
-from typing import Any, Callable, Generic, TypeVar
+from collections.abc import Callable
+from typing import Any, Generic, TypeVar
 
 import httpx
 

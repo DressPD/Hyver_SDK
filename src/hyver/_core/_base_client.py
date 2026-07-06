@@ -14,7 +14,7 @@ import random
 import secrets
 import time
 from importlib.metadata import PackageNotFoundError, version
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -54,8 +54,8 @@ class _BaseClient:
         base_url: str | httpx.URL,
         timeout: Any = None,
         max_retries: int = 2,
-        auth_query: Optional[dict] = None,
-        auth_headers: Optional[dict] = None,
+        auth_query: dict | None = None,
+        auth_headers: dict | None = None,
     ) -> None:
         self._base_url = httpx.URL(str(base_url).rstrip("/") + "/")
         self._timeout = 60.0 if isinstance(timeout, NotGiven) or timeout is None else timeout
@@ -136,7 +136,7 @@ class _BaseClient:
             or response.status_code >= 500
         )
 
-    def _retry_delay(self, response: Optional[httpx.Response], attempt: int) -> float:
+    def _retry_delay(self, response: httpx.Response | None, attempt: int) -> float:
         if response is not None:
             ra = response.headers.get("retry-after")
             if ra:
@@ -153,7 +153,7 @@ class _BaseClient:
         base = min(_INITIAL_RETRY_DELAY * (2 ** attempt), _MAX_RETRY_DELAY)
         return base * (0.5 + random.random() / 2)
 
-    def _prepare_retry(self, request: httpx.Request, options: Optional[RequestOptions] = None) -> None:
+    def _prepare_retry(self, request: httpx.Request, options: RequestOptions | None = None) -> None:
         if request.method in ("POST", "PATCH") and "idempotency-key" not in (
             k.lower() for k in request.headers
         ):
@@ -173,7 +173,7 @@ class _BaseClient:
     def _process_response_data(
         self, *, data: Any, cast_to: Any, response: httpx.Response
     ) -> Any:
-        from ._response import APIResponse, _RAW_RESPONSE_CTX
+        from ._response import _RAW_RESPONSE_CTX, APIResponse
 
         wrap_raw = _RAW_RESPONSE_CTX.get()
         if cast_to is None:
