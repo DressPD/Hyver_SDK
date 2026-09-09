@@ -12,9 +12,9 @@ from typing import (  # noqa: F401
     Optional,
     Union,
 )
-from typing_extensions import Required, TypedDict  # noqa: F401
 
 from pydantic import Field  # noqa: F401
+from typing_extensions import Required, TypedDict  # noqa: F401
 
 from .._core._models import BaseModel  # noqa: F401
 from .._core._types import FileTypes  # noqa: F401

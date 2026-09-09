@@ -4,10 +4,11 @@ from __future__ import annotations
 from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
 from functools import cached_property
-from typing import List, Literal, Union, overload
+from typing import Literal, overload
 
 import httpx
 
+from hyver._core._models import to_jsonable
 from hyver._core._request_options import make_request_options
 from hyver._core._resource import AsyncAPIResource, SyncAPIResource
 from hyver._core._response import (
@@ -17,9 +18,8 @@ from hyver._core._response import (
     to_streamed_response_wrapper,
 )
 from hyver._core._sentinels import NotGiven, not_given
-from hyver._core._types import Body, FileTypes, Headers, Query  # noqa: F401
 from hyver._core._streaming import AsyncStream, Stream
-from hyver._core._models import to_jsonable
+from hyver._core._types import Body, FileTypes, Headers, Query  # noqa: F401
 from hyver.types import ChatCompletionCreateEvent, ChatCompletionCreateParamsMessages, ChatCompletionCreateResponse
 
 __all__ = ["ChatCompletionsResource", "AsyncChatCompletionsResource"]
@@ -38,13 +38,13 @@ class ChatCompletionsResource(SyncAPIResource):
     def create(
         self,
         *,
-        messages: List[ChatCompletionCreateParamsMessages],
+        messages: list[ChatCompletionCreateParamsMessages],
         stream: Literal[False] = False,
         model: str | NotGiven = not_given,
         temperature: float | NotGiven = not_given,
         max_tokens: int | NotGiven = not_given,
         top_p: float | NotGiven = not_given,
-        stop: Union[List[str], str] | NotGiven = not_given,
+        stop: list[str] | str | NotGiven = not_given,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -55,13 +55,13 @@ class ChatCompletionsResource(SyncAPIResource):
     def create(
         self,
         *,
-        messages: List[ChatCompletionCreateParamsMessages],
+        messages: list[ChatCompletionCreateParamsMessages],
         stream: Literal[True],
         model: str | NotGiven = not_given,
         temperature: float | NotGiven = not_given,
         max_tokens: int | NotGiven = not_given,
         top_p: float | NotGiven = not_given,
-        stop: Union[List[str], str] | NotGiven = not_given,
+        stop: list[str] | str | NotGiven = not_given,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -71,13 +71,13 @@ class ChatCompletionsResource(SyncAPIResource):
     def create(
         self,
         *,
-        messages: List[ChatCompletionCreateParamsMessages],
+        messages: list[ChatCompletionCreateParamsMessages],
         stream: bool = False,
         model: str | NotGiven = not_given,
         temperature: float | NotGiven = not_given,
         max_tokens: int | NotGiven = not_given,
         top_p: float | NotGiven = not_given,
-        stop: Union[List[str], str] | NotGiven = not_given,
+        stop: list[str] | str | NotGiven = not_given,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -97,7 +97,7 @@ class ChatCompletionsResource(SyncAPIResource):
         }
         _body = {k: v for k, v in _body.items() if v is not not_given}
         return self._post(
-            f"/v1/chat/completions",
+            "/v1/chat/completions",
             body=to_jsonable(_body),
             options=make_request_options(
                 extra_headers=extra_headers,
@@ -124,13 +124,13 @@ class AsyncChatCompletionsResource(AsyncAPIResource):
     async def create(
         self,
         *,
-        messages: List[ChatCompletionCreateParamsMessages],
+        messages: list[ChatCompletionCreateParamsMessages],
         stream: Literal[False] = False,
         model: str | NotGiven = not_given,
         temperature: float | NotGiven = not_given,
         max_tokens: int | NotGiven = not_given,
         top_p: float | NotGiven = not_given,
-        stop: Union[List[str], str] | NotGiven = not_given,
+        stop: list[str] | str | NotGiven = not_given,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -141,13 +141,13 @@ class AsyncChatCompletionsResource(AsyncAPIResource):
     async def create(
         self,
         *,
-        messages: List[ChatCompletionCreateParamsMessages],
+        messages: list[ChatCompletionCreateParamsMessages],
         stream: Literal[True],
         model: str | NotGiven = not_given,
         temperature: float | NotGiven = not_given,
         max_tokens: int | NotGiven = not_given,
         top_p: float | NotGiven = not_given,
-        stop: Union[List[str], str] | NotGiven = not_given,
+        stop: list[str] | str | NotGiven = not_given,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -157,13 +157,13 @@ class AsyncChatCompletionsResource(AsyncAPIResource):
     async def create(
         self,
         *,
-        messages: List[ChatCompletionCreateParamsMessages],
+        messages: list[ChatCompletionCreateParamsMessages],
         stream: bool = False,
         model: str | NotGiven = not_given,
         temperature: float | NotGiven = not_given,
         max_tokens: int | NotGiven = not_given,
         top_p: float | NotGiven = not_given,
-        stop: Union[List[str], str] | NotGiven = not_given,
+        stop: list[str] | str | NotGiven = not_given,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -183,7 +183,7 @@ class AsyncChatCompletionsResource(AsyncAPIResource):
         }
         _body = {k: v for k, v in _body.items() if v is not not_given}
         return await self._post(
-            f"/v1/chat/completions",
+            "/v1/chat/completions",
             body=to_jsonable(_body),
             options=make_request_options(
                 extra_headers=extra_headers,

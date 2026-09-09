@@ -31,17 +31,17 @@ class ContentDeltaEvent(BaseModel):
 
 
 class OutputItemOutputVariant1(BaseModel):
-    text: Optional[str] = None
+    text: str | None = None
 
 
 class OutputItem(BaseModel):
     type: Literal["function_call", "image", "function_call_output"]
-    call_id: Optional[str] = None
-    name: Optional[str] = None
-    arguments: Optional[str] = None
-    url: Optional[str] = None
-    title: Optional[str] = None
-    output: Optional[Union[List[OutputItemOutputVariant1], str]] = None
+    call_id: str | None = None
+    name: str | None = None
+    arguments: str | None = None
+    url: str | None = None
+    title: str | None = None
+    output: list[OutputItemOutputVariant1] | str | None = None
 
 
 class OutputItemAddedEvent(BaseModel):
@@ -55,67 +55,67 @@ class OutputItemDoneEvent(BaseModel):
 
 
 class UsageInfo(BaseModel):
-    input_tokens: Optional[int] = None
-    output_tokens: Optional[int] = None
-    total_tokens: Optional[int] = None
-    system_prompt_tokens: Optional[int] = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+    system_prompt_tokens: int | None = None
 
 
 class ResponseCompletedEvent(BaseModel):
     event: Literal["response.completed"]
-    usage: Optional[UsageInfo] = None
-    model: Optional[str] = None
-    session_id: Optional[str] = None
+    usage: UsageInfo | None = None
+    model: str | None = None
+    session_id: str | None = None
 
 
 class ResponseFailedEventError(BaseModel):
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class ResponseFailedEvent(BaseModel):
     event: Literal["response.failed"]
-    error: Optional[ResponseFailedEventError] = None
+    error: ResponseFailedEventError | None = None
 
 
 class ToolStartedEvent(BaseModel):
     event: Literal["tool.started"]
-    run_id: Optional[str] = None
-    timestamp: Optional[float] = None
-    tool: Optional[str] = None
-    preview: Optional[str] = None
+    run_id: str | None = None
+    timestamp: float | None = None
+    tool: str | None = None
+    preview: str | None = None
 
 
 class ToolCompletedEvent(BaseModel):
     event: Literal["tool.completed"]
-    run_id: Optional[str] = None
-    timestamp: Optional[float] = None
-    tool: Optional[str] = None
-    duration: Optional[float] = None
-    error: Optional[bool] = None
+    run_id: str | None = None
+    timestamp: float | None = None
+    tool: str | None = None
+    duration: float | None = None
+    error: bool | None = None
 
 
 class ToolStartEvent(BaseModel):
     event: Literal["tool.start"]
-    tool: Optional[str] = None
-    name: Optional[str] = None
-    call_id: Optional[str] = None
-    id: Optional[str] = None
-    input: Optional[Dict[str, object]] = None
+    tool: str | None = None
+    name: str | None = None
+    call_id: str | None = None
+    id: str | None = None
+    input: dict[str, object] | None = None
 
 
 class ToolProgressEvent(BaseModel):
     event: Literal["tool.progress", "hermes.tool.progress"]
-    tool: Optional[str] = None
-    name: Optional[str] = None
-    call_id: Optional[str] = None
+    tool: str | None = None
+    name: str | None = None
+    call_id: str | None = None
 
 
 class ToolResultEvent(BaseModel):
     event: Literal["tool.result"]
-    call_id: Optional[str] = None
-    tool: Optional[str] = None
-    output: Optional[Union[Dict[str, object], str]] = None
-    result: Optional[str] = None
+    call_id: str | None = None
+    tool: str | None = None
+    output: dict[str, object] | str | None = None
+    result: str | None = None
 
 
 class ReasoningEvent(BaseModel):
@@ -125,77 +125,77 @@ class ReasoningEvent(BaseModel):
 
 class ApprovalRequestEvent(BaseModel):
     event: Literal["approval.request"]
-    run_id: Optional[str] = None
-    timestamp: Optional[float] = None
-    command: Optional[str] = None
-    description: Optional[str] = None
-    pattern_key: Optional[str] = None
-    pattern_keys: Optional[List[str]] = None
-    choices: Optional[List[Literal["once", "session", "always", "deny"]]] = None
-    allow_permanent: Optional[bool] = None
-    smart_denied: Optional[bool] = None
+    run_id: str | None = None
+    timestamp: float | None = None
+    command: str | None = None
+    description: str | None = None
+    pattern_key: str | None = None
+    pattern_keys: list[str] | None = None
+    choices: list[Literal["once", "session", "always", "deny"]] | None = None
+    allow_permanent: bool | None = None
+    smart_denied: bool | None = None
 
 
 class ApprovalRespondedEvent(BaseModel):
     event: Literal["approval.responded"]
-    run_id: Optional[str] = None
-    timestamp: Optional[float] = None
-    choice: Optional[Literal["once", "session", "always", "deny"]] = None
-    resolved: Optional[bool] = None
+    run_id: str | None = None
+    timestamp: float | None = None
+    choice: Literal["once", "session", "always", "deny"] | None = None
+    resolved: bool | None = None
 
 
 class ApprovalRequiredEvent(BaseModel):
     event: Literal["approval.required", "hermes.approval_required"]
-    run_id: Optional[str] = None
-    tool: Optional[str] = None
-    input: Optional[Dict[str, object]] = None
-    session_id: Optional[str] = None
+    run_id: str | None = None
+    tool: str | None = None
+    input: dict[str, object] | None = None
+    session_id: str | None = None
 
 
 class UsageEvent(BaseModel):
     event: Literal["hermes.usage"]
-    input_tokens: Optional[int] = None
-    output_tokens: Optional[int] = None
-    total_tokens: Optional[int] = None
-    system_prompt_tokens: Optional[int] = None
-    model: Optional[str] = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+    system_prompt_tokens: int | None = None
+    model: str | None = None
 
 
 class RunCompletedEvent(BaseModel):
     event: Literal["run.completed"]
-    output: Optional[str] = None
-    usage: Optional[UsageInfo] = None
-    model: Optional[str] = None
-    session_id: Optional[str] = None
+    output: str | None = None
+    usage: UsageInfo | None = None
+    model: str | None = None
+    session_id: str | None = None
 
 
 class RunFailedEventErrorVariant1(BaseModel):
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class RunFailedEvent(BaseModel):
     event: Literal["run.failed"]
-    error: Optional[Union[RunFailedEventErrorVariant1, str]] = None
-    message: Optional[str] = None
+    error: RunFailedEventErrorVariant1 | str | None = None
+    message: str | None = None
 
 
 class RunCancelledEvent(BaseModel):
     event: Literal["run.cancelled"]
-    run_id: Optional[str] = None
-    timestamp: Optional[float] = None
-    session_id: Optional[str] = None
+    run_id: str | None = None
+    timestamp: float | None = None
+    session_id: str | None = None
 
 
 class ErrorEventErrorVariant1(BaseModel):
-    message: Optional[str] = None
+    message: str | None = None
 
 
 class ErrorEvent(BaseModel):
     event: Literal["error"]
-    error: Optional[Union[ErrorEventErrorVariant1, str]] = None
-    message: Optional[str] = None
+    error: ErrorEventErrorVariant1 | str | None = None
+    message: str | None = None
 
 
 class DoneEvent(BaseModel):
     event: Literal["done", "message_stop"]
-    session_id: Optional[str] = None
+    session_id: str | None = None

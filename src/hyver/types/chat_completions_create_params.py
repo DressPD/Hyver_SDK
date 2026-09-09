@@ -12,9 +12,9 @@ from typing import (  # noqa: F401
     Optional,
     Union,
 )
-from typing_extensions import Required, TypedDict  # noqa: F401
 
 from pydantic import Field  # noqa: F401
+from typing_extensions import Required, TypedDict  # noqa: F401
 
 from .._core._models import BaseModel  # noqa: F401
 from .._core._types import FileTypes  # noqa: F401
@@ -28,9 +28,9 @@ class ChatCompletionCreateParamsMessages(BaseModel):
 
 class ChatCompletionCreateParams(TypedDict, total=False):
     model: str
-    messages: Required[List[ChatCompletionCreateParamsMessages]]
+    messages: Required[list[ChatCompletionCreateParamsMessages]]
     temperature: float
     max_tokens: int
     stream: bool
     top_p: float
-    stop: Union[List[str], str]
+    stop: list[str] | str
