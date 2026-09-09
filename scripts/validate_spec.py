@@ -26,10 +26,10 @@ def _check(condition: bool, msg: str) -> None:
 def main() -> None:
     print(f"Validating {SPEC_PATH} ...")
 
-    import yaml  # pyyaml is a transitive dep of stainful / hyver-sdk env
+    from ruamel.yaml import YAML; yaml = YAML(typ="safe")  # ruamel is a transitive dep of stainful
 
     with open(SPEC_PATH) as fh:
-        spec = yaml.safe_load(fh)
+        spec = yaml.load(fh)
 
     schemas = spec.get("components", {}).get("schemas", {})
 
