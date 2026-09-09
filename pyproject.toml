@@ -46,7 +46,7 @@ packages = ["src/hyver"]
 [tool.ruff]
 target-version = "py310"
 line-length = 120
-extend-exclude = ["src/hyver/_core/", "src/hyver/_utils.py"]
+extend-exclude = ["src/hyver/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
