@@ -20,14 +20,10 @@ from .runs_create_params import (
     RunCreateParamsMetadata,
 )
 from .runs_create_response import RunCreateResponse
-from .session import (
-    Session,
-    SessionHistoryPagination,
-    SessionHistoryResponse,
-    SessionListResponse,
-)
 from .shared import (
+    ApprovalRequestEvent,
     ApprovalRequiredEvent,
+    ApprovalRespondedEvent,
     ContentDeltaEvent,
     DoneEvent,
     ErrorEvent,
@@ -41,18 +37,23 @@ from .shared import (
     ResponseCreatedEvent,
     ResponseFailedEvent,
     ResponseFailedEventError,
+    RunCancelledEvent,
     RunCompletedEvent,
     RunFailedEvent,
     RunFailedEventErrorVariant1,
+    ToolCompletedEvent,
     ToolProgressEvent,
     ToolResultEvent,
+    ToolStartedEvent,
     ToolStartEvent,
     UsageEvent,
     UsageInfo,
 )
 
 __all__ = [
+    "ApprovalRequestEvent",
     "ApprovalRequiredEvent",
+    "ApprovalRespondedEvent",
     "ChatCompletionCreateEvent",
     "ChatCompletionCreateEventChoice",
     "ChatCompletionCreateEventChoiceDelta",
@@ -76,6 +77,7 @@ __all__ = [
     "ResponseCreatedEvent",
     "ResponseFailedEvent",
     "ResponseFailedEventError",
+    "RunCancelledEvent",
     "RunCompletedEvent",
     "RunCreateParams",
     "RunCreateParamsConversationHistory",
@@ -85,13 +87,24 @@ __all__ = [
     "RunFailedEvent",
     "RunFailedEventErrorVariant1",
     "RunsApprovalSubmitParams",
+    "ToolCompletedEvent",
+    "ToolProgressEvent",
+    "ToolResultEvent",
+    "ToolStartEvent",
+    "ToolStartedEvent",
+    "UsageEvent",
+    "UsageInfo",
+]
+from .session import (
+    Session,
+    SessionHistoryPagination,
+    SessionHistoryResponse,
+    SessionListResponse,
+)
+
+__all__ += [
     "Session",
     "SessionHistoryPagination",
     "SessionHistoryResponse",
     "SessionListResponse",
-    "ToolProgressEvent",
-    "ToolResultEvent",
-    "ToolStartEvent",
-    "UsageEvent",
-    "UsageInfo",
 ]

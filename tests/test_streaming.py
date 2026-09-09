@@ -17,24 +17,24 @@ from hyver.types import (
 )
 
 SSE_CONTENT_STREAM = (
-    'event: response.created\ndata: {"type":"response.created"}\n\n'
+    'event: response.created\ndata: {"event":"response.created"}\n\n'
     "event: response.output_text.delta\n"
-    'data: {"type":"response.output_text.delta","delta":"Hello"}\n\n'
+    'data: {"event":"response.output_text.delta","delta":"Hello"}\n\n'
     "event: response.output_text.delta\n"
-    'data: {"type":"response.output_text.delta","delta":" world"}\n\n'
+    'data: {"event":"response.output_text.delta","delta":" world"}\n\n'
     "event: response.completed\n"
-    'data: {"type":"response.completed","usage":{"input_tokens":10,'
+    'data: {"event":"response.completed","usage":{"input_tokens":10,'
     '"output_tokens":5,"total_tokens":15},"model":"claude-3","session_id":"s1"}\n\n'
     "data: [DONE]\n\n"
 )
 
 SSE_TOOL_STREAM = (
-    'event: response.created\ndata: {"type":"response.created"}\n\n'
+    'event: response.created\ndata: {"event":"response.created"}\n\n'
     "event: tool.start\n"
-    'data: {"type":"tool.start","tool":"brave","name":"brave",'
+    'data: {"event":"tool.start","tool":"brave","name":"brave",'
     '"call_id":"call-1","input":{"query":"test"}}\n\n'
     "event: response.output_text.delta\n"
-    'data: {"type":"response.output_text.delta","delta":"Result"}\n\n'
+    'data: {"event":"response.output_text.delta","delta":"Result"}\n\n'
     "data: [DONE]\n\n"
 )
 
@@ -123,7 +123,7 @@ class TestStreamClosesBehavior:
             ]
         )
         mock_client = MagicMock()
-        mock_client._process_response_data.return_value = {"type": "response.created"}
+        mock_client._process_response_data.return_value = {"event": "response.created"}
         stream = Stream(cast_to=dict, response=mock_response, client=mock_client)
         list(stream)
         mock_response.close.assert_called_once()
@@ -141,7 +141,7 @@ class TestStreamClosesBehavior:
             ]
         )
         mock_client = MagicMock()
-        mock_client._process_response_data.return_value = {"type": "test"}
+        mock_client._process_response_data.return_value = {"event": "test"}
         stream = Stream(cast_to=dict, response=mock_response, client=mock_client)
         for _ in stream:
             break

@@ -32,6 +32,9 @@ jobs:
           uv run ruff check src/ tests/
           uv run ruff format --check src/ tests/
 
+      - name: Validate OpenAPI spec
+        run: python3 scripts/validate_spec.py
+
       - name: Type check
         run: uv run mypy src/
         continue-on-error: true

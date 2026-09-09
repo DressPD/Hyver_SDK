@@ -3,8 +3,15 @@ from __future__ import annotations
 
 from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
-from typing import (
+from typing import (  # noqa: F401
+    Annotated,
+    Any,
+    Dict,
+    List,
     Literal,
+    Optional,
+    TypedDict,
+    Union,
 )
 
 from pydantic import Field  # noqa: F401
@@ -15,11 +22,11 @@ from .._utils import PropertyInfo  # noqa: F401
 
 
 class ResponseCreatedEvent(BaseModel):
-    type: Literal["response.created"]
+    event: Literal["response.created"]
 
 
 class ContentDeltaEvent(BaseModel):
-    type: Literal["response.output_text.delta", "message.delta"]
+    event: Literal["response.output_text.delta", "message.delta"]
     delta: str
 
 
@@ -38,12 +45,12 @@ class OutputItem(BaseModel):
 
 
 class OutputItemAddedEvent(BaseModel):
-    type: Literal["response.output_item.added"]
+    event: Literal["response.output_item.added"]
     item: OutputItem
 
 
 class OutputItemDoneEvent(BaseModel):
-    type: Literal["response.output_item.done"]
+    event: Literal["response.output_item.done"]
     item: OutputItem
 
 
@@ -55,7 +62,7 @@ class UsageInfo(BaseModel):
 
 
 class ResponseCompletedEvent(BaseModel):
-    type: Literal["response.completed"]
+    event: Literal["response.completed"]
     usage: UsageInfo | None = None
     model: str | None = None
     session_id: str | None = None
@@ -66,12 +73,29 @@ class ResponseFailedEventError(BaseModel):
 
 
 class ResponseFailedEvent(BaseModel):
-    type: Literal["response.failed"]
+    event: Literal["response.failed"]
     error: ResponseFailedEventError | None = None
 
 
+class ToolStartedEvent(BaseModel):
+    event: Literal["tool.started"]
+    run_id: str | None = None
+    timestamp: float | None = None
+    tool: str | None = None
+    preview: str | None = None
+
+
+class ToolCompletedEvent(BaseModel):
+    event: Literal["tool.completed"]
+    run_id: str | None = None
+    timestamp: float | None = None
+    tool: str | None = None
+    duration: float | None = None
+    error: bool | None = None
+
+
 class ToolStartEvent(BaseModel):
-    type: Literal["tool.start"]
+    event: Literal["tool.start"]
     tool: str | None = None
     name: str | None = None
     call_id: str | None = None
@@ -80,14 +104,14 @@ class ToolStartEvent(BaseModel):
 
 
 class ToolProgressEvent(BaseModel):
-    type: Literal["tool.progress", "hermes.tool.progress"]
+    event: Literal["tool.progress", "hermes.tool.progress"]
     tool: str | None = None
     name: str | None = None
     call_id: str | None = None
 
 
 class ToolResultEvent(BaseModel):
-    type: Literal["tool.result"]
+    event: Literal["tool.result"]
     call_id: str | None = None
     tool: str | None = None
     output: dict[str, object] | str | None = None
@@ -95,12 +119,33 @@ class ToolResultEvent(BaseModel):
 
 
 class ReasoningEvent(BaseModel):
-    type: Literal["reasoning.available", "response.reasoning", "hermes.reasoning"]
+    event: Literal["reasoning.available", "response.reasoning", "hermes.reasoning"]
     text: str
 
 
+class ApprovalRequestEvent(BaseModel):
+    event: Literal["approval.request"]
+    run_id: str | None = None
+    timestamp: float | None = None
+    command: str | None = None
+    description: str | None = None
+    pattern_key: str | None = None
+    pattern_keys: list[str] | None = None
+    choices: list[Literal["once", "session", "always", "deny"]] | None = None
+    allow_permanent: bool | None = None
+    smart_denied: bool | None = None
+
+
+class ApprovalRespondedEvent(BaseModel):
+    event: Literal["approval.responded"]
+    run_id: str | None = None
+    timestamp: float | None = None
+    choice: Literal["once", "session", "always", "deny"] | None = None
+    resolved: bool | None = None
+
+
 class ApprovalRequiredEvent(BaseModel):
-    type: Literal["approval.required", "hermes.approval_required"]
+    event: Literal["approval.required", "hermes.approval_required"]
     run_id: str | None = None
     tool: str | None = None
     input: dict[str, object] | None = None
@@ -108,7 +153,7 @@ class ApprovalRequiredEvent(BaseModel):
 
 
 class UsageEvent(BaseModel):
-    type: Literal["hermes.usage"]
+    event: Literal["hermes.usage"]
     input_tokens: int | None = None
     output_tokens: int | None = None
     total_tokens: int | None = None
@@ -117,7 +162,8 @@ class UsageEvent(BaseModel):
 
 
 class RunCompletedEvent(BaseModel):
-    type: Literal["run.completed"]
+    event: Literal["run.completed"]
+    output: str | None = None
     usage: UsageInfo | None = None
     model: str | None = None
     session_id: str | None = None
@@ -128,9 +174,16 @@ class RunFailedEventErrorVariant1(BaseModel):
 
 
 class RunFailedEvent(BaseModel):
-    type: Literal["run.failed"]
+    event: Literal["run.failed"]
     error: RunFailedEventErrorVariant1 | str | None = None
     message: str | None = None
+
+
+class RunCancelledEvent(BaseModel):
+    event: Literal["run.cancelled"]
+    run_id: str | None = None
+    timestamp: float | None = None
+    session_id: str | None = None
 
 
 class ErrorEventErrorVariant1(BaseModel):
@@ -138,11 +191,11 @@ class ErrorEventErrorVariant1(BaseModel):
 
 
 class ErrorEvent(BaseModel):
-    type: Literal["error"]
+    event: Literal["error"]
     error: ErrorEventErrorVariant1 | str | None = None
     message: str | None = None
 
 
 class DoneEvent(BaseModel):
-    type: Literal["done", "message_stop"]
+    event: Literal["done", "message_stop"]
     session_id: str | None = None

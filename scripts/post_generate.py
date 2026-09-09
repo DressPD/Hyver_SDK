@@ -37,32 +37,32 @@ def patch_shared_py() -> None:
 
     _patch(
         path,
-        "    type: Literal['message.delta']\n    delta: str",
-        "    type: Literal['response.output_text.delta', 'message.delta']\n    delta: str",
+        "    event: Literal['message.delta']\n    delta: str",
+        "    event: Literal['response.output_text.delta', 'message.delta']\n    delta: str",
         "Fix 1a: ContentDeltaEvent.type widened",
     )
     _patch(
         path,
-        "    type: Literal['hermes.tool.progress']\n    tool:",
-        "    type: Literal['tool.progress', 'hermes.tool.progress']\n    tool:",
+        "    event: Literal['hermes.tool.progress']\n    tool:",
+        "    event: Literal['tool.progress', 'hermes.tool.progress']\n    tool:",
         "Fix 1b: ToolProgressEvent.type widened",
     )
     _patch(
         path,
-        "    type: Literal['hermes.reasoning']\n    text: str",
-        "    type: Literal['reasoning.available', 'response.reasoning', 'hermes.reasoning']\n    text: str",
+        "    event: Literal['hermes.reasoning']\n    text: str",
+        "    event: Literal['reasoning.available', 'response.reasoning', 'hermes.reasoning']\n    text: str",
         "Fix 1c: ReasoningEvent.type widened",
     )
     _patch(
         path,
-        "    type: Literal['hermes.approval_required']\n    run_id:",
-        "    type: Literal['approval.required', 'hermes.approval_required']\n    run_id:",
+        "    event: Literal['hermes.approval_required']\n    run_id:",
+        "    event: Literal['approval.required', 'hermes.approval_required']\n    run_id:",
         "Fix 1d: ApprovalRequiredEvent.type widened",
     )
     _patch(
         path,
-        "    type: Literal['message_stop']\n    session_id:",
-        "    type: Literal['done', 'message_stop']\n    session_id:",
+        "    event: Literal['message_stop']\n    session_id:",
+        "    event: Literal['done', 'message_stop']\n    session_id:",
         "Fix 1e: DoneEvent.type widened",
     )
 
@@ -325,11 +325,11 @@ def patch_streaming_py() -> None:
     _patch(
         path,
         "    def __enter__(self) -> Stream[_T]:\n",
-        "    @staticmethod\n"
-        "    def _normalize_event_data(data: object) -> object:\n"
-        '        """Server sends discriminator as \'event\'; Pydantic models use \'type\'."""\n'
-        "        if isinstance(data, dict) and \"event\" in data and \"type\" not in data:\n"
-        "            data[\"type\"] = data.pop(\"event\")\n"
+"        @staticmethod\n"
+        "        def _normalize_event_data(data: object) -> object:\n"
+        '        """Normalize older servers that use \'type\' to the canonical \'event\' field."""\n'
+        "        if isinstance(data, dict) and \"type\" in data and \"event\" not in data:\n"
+        "            data[\"event\"] = data.pop(\"type\")\n"
         "        return data\n\n"
         "    def __enter__(self) -> Stream[_T]:\n",
         "Fix 3c2: Stream._normalize_event_data for server event→type mapping",
@@ -442,9 +442,15 @@ def patch_params_files() -> None:
     )
     _patch(
         approval_path,
-        "    approved: bool\n",
-        "    approved: Required[bool]\n",
-        "Fix 4f: approved Required",
+        "    choice: Literal[",
+        "    choice: Required[Literal[",
+        "Fix 4f: choice Required (open bracket)",
+    )
+    _patch(
+        approval_path,
+        "'approve', 'approved', 'allow']\n",
+        "'approve', 'approved', 'allow']]\n",
+        "Fix 4f: choice Required (close bracket)",
     )
 
 
@@ -509,13 +515,13 @@ def patch_version_exports() -> None:
     )
     _patch(
         path,
-        "HyverSDKError = APIError\nHyverSDKAPIResponse = APIResponse\n\n__all__ = [\n    \"HyverSDK\",",
+"HyverSDKError = APIError\nHyverSDKAPIResponse = APIResponse\n\n__all__ = ['HyverSDK',",
         "HyverSDKError = APIError\nHyverSDKAPIResponse = APIResponse\n\n"
-        "try:\n"
+        'try:\n'
         '    __version__ = version("hyver-sdk")\n'
         "except PackageNotFoundError:  # running from a source tree without install metadata\n"
         '    __version__ = "0.0.0"\n\n'
-        "__all__ = [\n    \"__version__\",\n    \"HyverSDK\",",
+        "__all__ = ['__version__', 'HyverSDK',",
         "Fix 15b: expose __version__",
     )
 
@@ -653,12 +659,12 @@ def patch_missing_bugfixes() -> None:
         "    def submit(\n"
         "        self,\n"
         "        *,\n"
-        "        approved: bool,\n",
+        "        choice: Literal[",
         "    def submit(\n"
         "        self,\n"
         "        *,\n"
         "        run_id: str,\n"
-        "        approved: bool,\n",
+        "        choice: Literal[",
         "Fix 12a: RunsApprovalResource.submit() add missing run_id param",
     )
     _patch(
@@ -666,12 +672,12 @@ def patch_missing_bugfixes() -> None:
         "    async def submit(\n"
         "        self,\n"
         "        *,\n"
-        "        approved: bool,\n",
+        "        choice: Literal[",
         "    async def submit(\n"
         "        self,\n"
         "        *,\n"
         "        run_id: str,\n"
-        "        approved: bool,\n",
+        "        choice: Literal[",
         "Fix 12b: AsyncRunsApprovalResource.submit() add missing run_id param",
     )
 
@@ -705,7 +711,9 @@ def patch_missing_bugfixes() -> None:
             "from hyver._core._streaming import AsyncStream, Stream\n"
             "from pydantic import Field\n"
             "from hyver.types import (\n"
+            "    ApprovalRequestEvent,\n"
             "    ApprovalRequiredEvent,\n"
+            "    ApprovalRespondedEvent,\n"
             "    ContentDeltaEvent,\n"
             "    DoneEvent,\n"
             "    ErrorEvent,\n"
@@ -715,11 +723,14 @@ def patch_missing_bugfixes() -> None:
             "    ResponseCompletedEvent,\n"
             "    ResponseCreatedEvent,\n"
             "    ResponseFailedEvent,\n"
+            "    RunCancelledEvent,\n"
             "    RunCompletedEvent,\n"
             "    RunFailedEvent,\n"
+            "    ToolCompletedEvent,\n"
             "    ToolProgressEvent,\n"
             "    ToolResultEvent,\n"
             "    ToolStartEvent,\n"
+            "    ToolStartedEvent,\n"
             "    UsageEvent,\n"
             ")\n"
             "\n"
@@ -727,7 +738,9 @@ def patch_missing_bugfixes() -> None:
             "\n"
             "_SSEEventUnion = Annotated[\n"
             "    Union[\n"
+            "        ApprovalRequestEvent,\n"
             "        ApprovalRequiredEvent,\n"
+            "        ApprovalRespondedEvent,\n"
             "        ContentDeltaEvent,\n"
             "        DoneEvent,\n"
             "        ErrorEvent,\n"
@@ -737,14 +750,17 @@ def patch_missing_bugfixes() -> None:
             "        ResponseCompletedEvent,\n"
             "        ResponseCreatedEvent,\n"
             "        ResponseFailedEvent,\n"
+            "        RunCancelledEvent,\n"
             "        RunCompletedEvent,\n"
             "        RunFailedEvent,\n"
+            "        ToolCompletedEvent,\n"
             "        ToolProgressEvent,\n"
             "        ToolResultEvent,\n"
             "        ToolStartEvent,\n"
+            "        ToolStartedEvent,\n"
             "        UsageEvent,\n"
             "    ],\n"
-            '    Field(discriminator="type"),\n'
+            '    Field(discriminator="event"),\n'
             "]\n"
             "\n"
             "\n"

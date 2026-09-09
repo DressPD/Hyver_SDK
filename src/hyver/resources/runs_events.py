@@ -20,7 +20,9 @@ from hyver._core._sentinels import NotGiven, not_given
 from hyver._core._streaming import AsyncStream, Stream
 from hyver._core._types import Body, Headers, Query
 from hyver.types import (
+    ApprovalRequestEvent,
     ApprovalRequiredEvent,
+    ApprovalRespondedEvent,
     ContentDeltaEvent,
     DoneEvent,
     ErrorEvent,
@@ -30,10 +32,13 @@ from hyver.types import (
     ResponseCompletedEvent,
     ResponseCreatedEvent,
     ResponseFailedEvent,
+    RunCancelledEvent,
     RunCompletedEvent,
     RunFailedEvent,
+    ToolCompletedEvent,
     ToolProgressEvent,
     ToolResultEvent,
+    ToolStartedEvent,
     ToolStartEvent,
     UsageEvent,
 )
@@ -41,23 +46,8 @@ from hyver.types import (
 __all__ = ["RunsEventsResource", "AsyncRunsEventsResource"]
 
 _SSEEventUnion = Annotated[
-    ApprovalRequiredEvent
-    | ContentDeltaEvent
-    | DoneEvent
-    | ErrorEvent
-    | OutputItemAddedEvent
-    | OutputItemDoneEvent
-    | ReasoningEvent
-    | ResponseCompletedEvent
-    | ResponseCreatedEvent
-    | ResponseFailedEvent
-    | RunCompletedEvent
-    | RunFailedEvent
-    | ToolProgressEvent
-    | ToolResultEvent
-    | ToolStartEvent
-    | UsageEvent,
-    Field(discriminator="type"),
+    ApprovalRequestEvent | ApprovalRequiredEvent | ApprovalRespondedEvent | ContentDeltaEvent | DoneEvent | ErrorEvent | OutputItemAddedEvent | OutputItemDoneEvent | ReasoningEvent | ResponseCompletedEvent | ResponseCreatedEvent | ResponseFailedEvent | RunCancelledEvent | RunCompletedEvent | RunFailedEvent | ToolCompletedEvent | ToolProgressEvent | ToolResultEvent | ToolStartEvent | ToolStartedEvent | UsageEvent,
+    Field(discriminator="event"),
 ]
 
 
