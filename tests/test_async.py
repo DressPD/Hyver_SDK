@@ -112,16 +112,16 @@ class TestAsyncRunsApprovalResource:
     @respx.mock
     async def test_approve(self, async_client: AsyncHyverSDK, base_url: str) -> None:
         route = respx.post(f"{base_url}/v1/runs/run-a/approval").mock(return_value=httpx.Response(200, json={}))
-        await async_client.runs_approval.submit(run_id="run-a", approved=True)
+        await async_client.runs_approval.submit(run_id="run-a", choice="once")
         body = json.loads(route.calls[0].request.content)
-        assert body["approved"] is True
+        assert body["choice"] == "once"
 
     @respx.mock
     async def test_reject(self, async_client: AsyncHyverSDK, base_url: str) -> None:
         route = respx.post(f"{base_url}/v1/runs/run-a/approval").mock(return_value=httpx.Response(200, json={}))
-        await async_client.runs_approval.submit(run_id="run-a", approved=False)
+        await async_client.runs_approval.submit(run_id="run-a", choice="deny")
         body = json.loads(route.calls[0].request.content)
-        assert body["approved"] is False
+        assert body["choice"] == "deny"
 
 
 class TestAsyncErrorMapping:

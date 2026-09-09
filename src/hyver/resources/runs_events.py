@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import Annotated
+from typing import Annotated, Union
 from urllib.parse import quote
 
 import httpx
-from pydantic import Field
 
 from hyver._core._request_options import make_request_options
 from hyver._core._resource import AsyncAPIResource, SyncAPIResource
@@ -17,10 +16,13 @@ from hyver._core._response import (
     to_streamed_response_wrapper,
 )
 from hyver._core._sentinels import NotGiven, not_given
-from hyver._core._streaming import AsyncStream, Stream
 from hyver._core._types import Body, Headers, Query
+from hyver._core._streaming import AsyncStream, Stream
+from pydantic import Field
 from hyver.types import (
+    ApprovalRequestEvent,
     ApprovalRequiredEvent,
+    ApprovalRespondedEvent,
     ContentDeltaEvent,
     DoneEvent,
     ErrorEvent,
@@ -30,34 +32,44 @@ from hyver.types import (
     ResponseCompletedEvent,
     ResponseCreatedEvent,
     ResponseFailedEvent,
+    RunCancelledEvent,
     RunCompletedEvent,
     RunFailedEvent,
+    ToolCompletedEvent,
     ToolProgressEvent,
     ToolResultEvent,
     ToolStartEvent,
+    ToolStartedEvent,
     UsageEvent,
 )
 
 __all__ = ["RunsEventsResource", "AsyncRunsEventsResource"]
 
 _SSEEventUnion = Annotated[
-    ApprovalRequiredEvent
-    | ContentDeltaEvent
-    | DoneEvent
-    | ErrorEvent
-    | OutputItemAddedEvent
-    | OutputItemDoneEvent
-    | ReasoningEvent
-    | ResponseCompletedEvent
-    | ResponseCreatedEvent
-    | ResponseFailedEvent
-    | RunCompletedEvent
-    | RunFailedEvent
-    | ToolProgressEvent
-    | ToolResultEvent
-    | ToolStartEvent
-    | UsageEvent,
-    Field(discriminator="type"),
+    Union[
+        ApprovalRequestEvent,
+        ApprovalRequiredEvent,
+        ApprovalRespondedEvent,
+        ContentDeltaEvent,
+        DoneEvent,
+        ErrorEvent,
+        OutputItemAddedEvent,
+        OutputItemDoneEvent,
+        ReasoningEvent,
+        ResponseCompletedEvent,
+        ResponseCreatedEvent,
+        ResponseFailedEvent,
+        RunCancelledEvent,
+        RunCompletedEvent,
+        RunFailedEvent,
+        ToolCompletedEvent,
+        ToolProgressEvent,
+        ToolResultEvent,
+        ToolStartEvent,
+        ToolStartedEvent,
+        UsageEvent,
+    ],
+    Field(discriminator="event"),
 ]
 
 

@@ -4,11 +4,11 @@ from __future__ import annotations
 from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
 from functools import cached_property
+from typing import Literal
 from urllib.parse import quote
 
 import httpx
 
-from hyver._core._models import to_jsonable
 from hyver._core._request_options import make_request_options
 from hyver._core._resource import AsyncAPIResource, SyncAPIResource
 from hyver._core._response import (
@@ -19,6 +19,7 @@ from hyver._core._response import (
 )
 from hyver._core._sentinels import NotGiven, not_given
 from hyver._core._types import Body, FileTypes, Headers, Query  # noqa: F401
+from hyver._core._models import to_jsonable
 
 __all__ = ["RunsApprovalResource", "AsyncRunsApprovalResource"]
 
@@ -36,7 +37,9 @@ class RunsApprovalResource(SyncAPIResource):
         self,
         *,
         run_id: str,
-        approved: bool,
+        choice: Literal["once", "session", "always", "deny", "approve", "approved", "allow"],
+        all: bool | NotGiven = not_given,
+        resolve_all: bool | NotGiven = not_given,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -45,7 +48,9 @@ class RunsApprovalResource(SyncAPIResource):
         """Approves or rejects a pending action during a run that has
         human-in-the-loop control enabled."""
         _body = {
-            "approved": approved,
+            "choice": choice,
+            "all": all,
+            "resolve_all": resolve_all,
         }
         _body = {k: v for k, v in _body.items() if v is not not_given}
         return self._post(
@@ -74,7 +79,9 @@ class AsyncRunsApprovalResource(AsyncAPIResource):
         self,
         *,
         run_id: str,
-        approved: bool,
+        choice: Literal["once", "session", "always", "deny", "approve", "approved", "allow"],
+        all: bool | NotGiven = not_given,
+        resolve_all: bool | NotGiven = not_given,
         extra_headers: Headers | None = None,
         extra_query: Query | None = None,
         extra_body: Body | None = None,
@@ -83,7 +90,9 @@ class AsyncRunsApprovalResource(AsyncAPIResource):
         """Approves or rejects a pending action during a run that has
         human-in-the-loop control enabled."""
         _body = {
-            "approved": approved,
+            "choice": choice,
+            "all": all,
+            "resolve_all": resolve_all,
         }
         _body = {k: v for k, v in _body.items() if v is not not_given}
         return await self._post(

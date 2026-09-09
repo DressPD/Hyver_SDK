@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 import httpx
 
@@ -18,23 +19,23 @@ __all__ = ["RequestOptions", "make_request_options"]
 
 @dataclass
 class RequestOptions:
-    extra_headers: Headers | None = None
-    extra_query: Query | None = None
-    extra_body: Body | None = None
+    extra_headers: Optional[Headers] = None
+    extra_query: Optional[Query] = None
+    extra_body: Optional[Body] = None
     timeout: float | httpx.Timeout | None | NotGiven = not_given
     max_retries: int | NotGiven = not_given
-    idempotency_key: str | None = None
+    idempotency_key: Optional[str] = None
     params: dict = field(default_factory=dict)
 
 
 def make_request_options(
     *,
-    extra_headers: Headers | None = None,
-    extra_query: Query | None = None,
-    extra_body: Body | None = None,
+    extra_headers: Optional[Headers] = None,
+    extra_query: Optional[Query] = None,
+    extra_body: Optional[Body] = None,
     timeout: float | httpx.Timeout | None | NotGiven = not_given,
-    idempotency_key: str | None = None,
-    params: dict | None = None,
+    idempotency_key: Optional[str] = None,
+    params: Optional[dict] = None,
 ) -> RequestOptions:
     return RequestOptions(
         extra_headers=extra_headers,

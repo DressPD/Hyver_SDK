@@ -41,7 +41,7 @@ class HealthResource(SyncAPIResource):
     ) -> HealthCheckResponse:
         """Returns service health status. No authentication required."""
         return self._get(
-            "/health",
+            f"/health",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -71,7 +71,7 @@ class AsyncHealthResource(AsyncAPIResource):
     ) -> HealthCheckResponse:
         """Returns service health status. No authentication required."""
         return await self._get(
-            "/health",
+            f"/health",
             options=make_request_options(
                 extra_headers=extra_headers,
                 extra_query=extra_query,

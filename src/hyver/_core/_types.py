@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from typing import IO, Any, Union
+from typing import IO, Any, Mapping, Optional, Tuple, Union
 
 from ._sentinels import Omit, Omittable
 
 # A header value may be explicitly removed with `omit`.
-Headers = Mapping[str, str | Omit]
+Headers = Mapping[str, Union[str, Omit]]
 Query = Mapping[str, object]
 Body = object
 
@@ -17,8 +16,8 @@ Body = object
 FileTypes = Union[
     IO[bytes],
     bytes,
-    tuple[str | None, IO[bytes] | bytes],
-    tuple[str | None, IO[bytes] | bytes, str | None],
+    Tuple[Optional[str], Union[IO[bytes], bytes]],
+    Tuple[Optional[str], Union[IO[bytes], bytes], Optional[str]],
 ]
 
 __all__ = ["Headers", "Query", "Body", "FileTypes", "Omittable", "Any"]

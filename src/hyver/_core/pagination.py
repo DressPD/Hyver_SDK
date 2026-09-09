@@ -7,11 +7,14 @@ it fetches subsequent pages on demand (sync `__iter__`, async `__aiter__`).
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass, replace
 from typing import (
     Any,
+    AsyncIterator,
     Generic,
+    Iterator,
+    List,
+    Optional,
     TypeVar,
 )
 
@@ -36,8 +39,8 @@ __all__ = [
 class PageInfo:
     """How to fetch the next page: query-param delta or an absolute url."""
 
-    params: dict | None = None
-    url: str | None = None
+    params: Optional[dict] = None
+    url: Optional[str] = None
 
 
 class BasePage(BaseModel, Generic[_T]):
@@ -49,11 +52,11 @@ class BasePage(BaseModel, Generic[_T]):
     # Per-call pagination config from the generator
     # (e.g. `{"cursor_param": "after", "cursor_response_field": "last_id"}`).
     # `None` → runtime defaults — see `_CursorPage.next_page_info`.
-    _pagination_cfg: dict | None = PrivateAttr(default=None)
+    _pagination_cfg: Optional[dict] = PrivateAttr(default=None)
 
     def _init_pagination(
         self, client, path, page_cls, options, pagination_cfg=None
-    ) -> BasePage:
+    ) -> "BasePage":
         self._client = client
         self._path = path
         self._page_cls = page_cls
@@ -61,17 +64,17 @@ class BasePage(BaseModel, Generic[_T]):
         self._pagination_cfg = pagination_cfg
         return self
 
-    def _get_page_items(self) -> list[_T]:  # pragma: no cover - overridden
+    def _get_page_items(self) -> List[_T]:  # pragma: no cover - overridden
         raise NotImplementedError
 
-    def next_page_info(self) -> PageInfo | None:  # pragma: no cover
+    def next_page_info(self) -> Optional[PageInfo]:  # pragma: no cover
         return None
 
     def has_next_page(self) -> bool:
         return self.next_page_info() is not None
 
 
-def _walk_sync(page: BasePage) -> Iterator[Any]:
+def _walk_sync(page: "BasePage") -> Iterator[Any]:
     while True:
         yield from page._get_page_items()
         info = page.next_page_info()
@@ -83,7 +86,7 @@ def _walk_sync(page: BasePage) -> Iterator[Any]:
         )
 
 
-async def _walk_async(page: BasePage) -> AsyncIterator[Any]:
+async def _walk_async(page: "BasePage") -> AsyncIterator[Any]:
     while True:
         for item in page._get_page_items():
             yield item
@@ -99,13 +102,13 @@ async def _walk_async(page: BasePage) -> AsyncIterator[Any]:
 class SyncPage(BasePage[_T], Generic[_T]):
     """`{"data": [...], "object": "list"}` — single page (no next)."""
 
-    data: list[_T]
-    object: str | None = None
+    data: List[_T]
+    object: Optional[str] = None
 
-    def _get_page_items(self) -> list[_T]:
+    def _get_page_items(self) -> List[_T]:
         return self.data or []
 
-    def next_page_info(self) -> PageInfo | None:
+    def next_page_info(self) -> Optional[PageInfo]:
         return None
 
     def __iter__(self) -> Iterator[_T]:  # type: ignore[override]
@@ -114,13 +117,13 @@ class SyncPage(BasePage[_T], Generic[_T]):
 
 
 class AsyncPage(BasePage[_T], Generic[_T]):
-    data: list[_T]
-    object: str | None = None
+    data: List[_T]
+    object: Optional[str] = None
 
-    def _get_page_items(self) -> list[_T]:
+    def _get_page_items(self) -> List[_T]:
         return self.data or []
 
-    def next_page_info(self) -> PageInfo | None:
+    def next_page_info(self) -> Optional[PageInfo]:
         return None
 
     def __aiter__(self) -> AsyncIterator[_T]:
@@ -128,14 +131,14 @@ class AsyncPage(BasePage[_T], Generic[_T]):
 
 
 class _CursorPage(BasePage[_T], Generic[_T]):
-    data: list[_T]
-    has_more: bool | None = None
-    next_cursor: str | None = None
+    data: List[_T]
+    has_more: Optional[bool] = None
+    next_cursor: Optional[str] = None
 
-    def _get_page_items(self) -> list[_T]:
+    def _get_page_items(self) -> List[_T]:
         return self.data or []
 
-    def next_page_info(self) -> PageInfo | None:
+    def next_page_info(self) -> Optional[PageInfo]:
         if self.has_more is False or not self.data:
             return None
         cfg = self._pagination_cfg or {}
@@ -144,7 +147,7 @@ class _CursorPage(BasePage[_T], Generic[_T]):
         # which silently fails against any API expecting `after`.
         param = cfg.get("cursor_param") or "after"
         field = cfg.get("cursor_response_field")
-        cursor: str | None = None
+        cursor: Optional[str] = None
         if field is not None:
             cursor = getattr(self, field, None)  # extra="allow" → attrs available
         if cursor is None:
@@ -179,15 +182,15 @@ class _BiDirectionalPage(BasePage[_T], Generic[_T]):
     anthropic-sdk-python's `SyncPage`.
     """
 
-    data: list[_T]
-    has_more: bool | None = None
-    first_id: str | None = None
-    last_id: str | None = None
+    data: List[_T]
+    has_more: Optional[bool] = None
+    first_id: Optional[str] = None
+    last_id: Optional[str] = None
 
-    def _get_page_items(self) -> list[_T]:
+    def _get_page_items(self) -> List[_T]:
         return self.data or []
 
-    def next_page_info(self) -> PageInfo | None:
+    def next_page_info(self) -> Optional[PageInfo]:
         if self.has_more is False or not self.data:
             return None
         cfg = self._pagination_cfg or {}

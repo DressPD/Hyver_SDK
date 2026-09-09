@@ -3,8 +3,15 @@ from __future__ import annotations
 
 from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
-from typing import (
+from typing import (  # noqa: F401
+    Annotated,
+    Any,
+    Dict,
+    List,
     Literal,
+    Optional,
+    TypedDict,
+    Union,
 )
 
 from pydantic import Field  # noqa: F401
@@ -22,38 +29,38 @@ class ChatCompletionCreateResponseChoiceMessage(BaseModel):
 class ChatCompletionCreateResponseChoice(BaseModel):
     index: int
     message: ChatCompletionCreateResponseChoiceMessage
-    finish_reason: Literal["stop", "length", "content_filter"] | None
+    finish_reason: Optional[Literal["stop", "length", "content_filter"]]
 
 
 class ChatCompletionCreateResponseUsage(BaseModel):
-    prompt_tokens: int | None = None
-    completion_tokens: int | None = None
-    total_tokens: int | None = None
+    prompt_tokens: Optional[int] = None
+    completion_tokens: Optional[int] = None
+    total_tokens: Optional[int] = None
 
 
 class ChatCompletionCreateResponse(BaseModel):
     id: str
     object: Literal["chat.completion"]
     created: int
-    model: str | None = None
-    choices: list[ChatCompletionCreateResponseChoice]
-    usage: ChatCompletionCreateResponseUsage | None = None
+    model: Optional[str] = None
+    choices: List[ChatCompletionCreateResponseChoice]
+    usage: Optional[ChatCompletionCreateResponseUsage] = None
 
 
 class ChatCompletionCreateEventChoiceDelta(BaseModel):
-    role: str | None = None
-    content: str | None = None
+    role: Optional[str] = None
+    content: Optional[str] = None
 
 
 class ChatCompletionCreateEventChoice(BaseModel):
     index: int
     delta: ChatCompletionCreateEventChoiceDelta
-    finish_reason: str | None = None
+    finish_reason: Optional[str] = None
 
 
 class ChatCompletionCreateEvent(BaseModel):
     id: str
     object: Literal["chat.completion.chunk"]
     created: int
-    model: str | None = None
-    choices: list[ChatCompletionCreateEventChoice]
+    model: Optional[str] = None
+    choices: List[ChatCompletionCreateEventChoice]

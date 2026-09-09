@@ -108,8 +108,23 @@ paths:
             schema:
               $ref: "#/components/schemas/RunCreateRequest"
       responses:
-        "200":
-          description: Run created successfully
+        "202":
+          description: |
+            Run accepted and started asynchronously. Stream progress from
+            `GET /v1/runs/{run_id}/events`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunCreateResponse"
+        # The runtime only ever returns 202 (see the "202" entry above, which is
+        # the authoritative documentation). This "2XX" duplicate exists solely
+        # because the SDK generator derives the typed response body from a fixed
+        # status list ("200", "201", "2XX", "default") and would otherwise emit
+        # an untyped `object` return for create_run. Keep both in sync.
+        "2XX":
+          description: |
+            Run accepted and started asynchronously. Stream progress from
+            `GET /v1/runs/{run_id}/events`.
           content:
             application/json:
               schema:
@@ -456,21 +471,69 @@ components:
           description: Enable human-in-the-loop approval for tool calls.
 
     RunApprovalRequest:
+      description: |
+        Resolves a pending approval gate.
+
+        The runtime rejects a boolean body with `400 invalid_approval_choice`;
+        `choice` is required. `approve`, `approved` and `allow` are accepted as
+        aliases for `once`.
       type: object
-      required: [approved]
+      required: [choice]
       properties:
-        approved:
+        choice:
+          type: string
+          description: |
+            How to resolve the gate.
+
+            * `once`    -- allow this single invocation
+            * `session` -- allow for the remainder of this run
+            * `always`  -- allow permanently (only when the
+              `approval.request` event set `allow_permanent: true`)
+            * `deny`    -- reject the invocation
+          enum: [once, session, always, deny, approve, approved, allow]
+        all:
           type: boolean
-          description: Whether to approve the pending action.
+          description: >-
+            Apply the choice to every pending approval for this run instead of
+            just the active one.
+        resolve_all:
+          type: boolean
+          description: Alias for `all`.
 
     # ── SSE Events ─────────────────────────────────────────────────────
     RunEvent:
       description: |
-        Server-Sent Event from a running agent. The `type` field discriminates
-        the event kind. Events come in two families: Responses API format
-        (response.*) and Hermes native format (run.*, message.*, tool.*, etc.).
+        Server-Sent Event from a running agent.
+
+        Wire format: the `/v1/runs/{run_id}/events` stream emits `data: {...}`
+        frames only -- it does NOT set the SSE `event:` field. The event kind is
+        carried by the **`event` JSON property**, which is the discriminator
+        below. Clients that also read the SSE `event:` line must fall back to
+        the `event` property.
+
+        Events come in two families: Hermes native format
+        (`run.*`, `message.*`, `tool.*`, `reasoning.*`, `approval.*`), which is
+        what the runtime emits today, and Responses API format (`response.*`),
+        retained for backwards compatibility with older clients.
+
+        Sub-protocol (undocumented upstream, Hyver-specific): several logical
+        event kinds are tunneled inside `reasoning.available` because the
+        upstream callback forwards only three event types. They are
+        discriminated by the `tool_name` slot with a JSON body in `text`:
+
+        | `tool_name`    | `text` payload                                              |
+        |----------------|-------------------------------------------------------------|
+        | `_tool_io`     | `{"type":"input","tool","args","call_id"}` -- real tool args |
+        | `_tool_io`     | `{"type":"output","tool","call_id","result"}`                |
+        | `_subagent`    | `{"event":"subagent.*","subagent_id","goal","depth",...}`    |
+        | `_compression` | plain context-compression status string                     |
+        | `_reasoning`   | plain thinking text                                         |
+        | `_thinking`    | suppressed (never emitted)                                  |
+
+        Consumers MUST NOT treat a `reasoning.available` frame whose payload
+        parses as one of the above as user-visible reasoning text.
       discriminator:
-        propertyName: type
+        propertyName: event
         mapping:
           "response.created": "#/components/schemas/ResponseCreatedEvent"
           "response.output_text.delta": "#/components/schemas/ContentDeltaEvent"
@@ -479,6 +542,8 @@ components:
           "response.output_item.done": "#/components/schemas/OutputItemDoneEvent"
           "response.completed": "#/components/schemas/ResponseCompletedEvent"
           "response.failed": "#/components/schemas/ResponseFailedEvent"
+          "tool.started": "#/components/schemas/ToolStartedEvent"
+          "tool.completed": "#/components/schemas/ToolCompletedEvent"
           "tool.start": "#/components/schemas/ToolStartEvent"
           "tool.progress": "#/components/schemas/ToolProgressEvent"
           "hermes.tool.progress": "#/components/schemas/ToolProgressEvent"
@@ -486,11 +551,14 @@ components:
           "reasoning.available": "#/components/schemas/ReasoningEvent"
           "response.reasoning": "#/components/schemas/ReasoningEvent"
           "hermes.reasoning": "#/components/schemas/ReasoningEvent"
+          "approval.request": "#/components/schemas/ApprovalRequestEvent"
+          "approval.responded": "#/components/schemas/ApprovalRespondedEvent"
           "approval.required": "#/components/schemas/ApprovalRequiredEvent"
           "hermes.approval_required": "#/components/schemas/ApprovalRequiredEvent"
           "hermes.usage": "#/components/schemas/UsageEvent"
           "run.completed": "#/components/schemas/RunCompletedEvent"
           "run.failed": "#/components/schemas/RunFailedEvent"
+          "run.cancelled": "#/components/schemas/RunCancelledEvent"
           "error": "#/components/schemas/ErrorEvent"
           "done": "#/components/schemas/DoneEvent"
           "message_stop": "#/components/schemas/DoneEvent"
@@ -501,31 +569,36 @@ components:
         - $ref: "#/components/schemas/OutputItemDoneEvent"
         - $ref: "#/components/schemas/ResponseCompletedEvent"
         - $ref: "#/components/schemas/ResponseFailedEvent"
+        - $ref: "#/components/schemas/ToolStartedEvent"
+        - $ref: "#/components/schemas/ToolCompletedEvent"
         - $ref: "#/components/schemas/ToolStartEvent"
         - $ref: "#/components/schemas/ToolProgressEvent"
         - $ref: "#/components/schemas/ToolResultEvent"
         - $ref: "#/components/schemas/ReasoningEvent"
+        - $ref: "#/components/schemas/ApprovalRequestEvent"
+        - $ref: "#/components/schemas/ApprovalRespondedEvent"
         - $ref: "#/components/schemas/ApprovalRequiredEvent"
         - $ref: "#/components/schemas/UsageEvent"
         - $ref: "#/components/schemas/RunCompletedEvent"
         - $ref: "#/components/schemas/RunFailedEvent"
+        - $ref: "#/components/schemas/RunCancelledEvent"
         - $ref: "#/components/schemas/ErrorEvent"
         - $ref: "#/components/schemas/DoneEvent"
 
     # ── Individual SSE Event Schemas ───────────────────────────────────
     ResponseCreatedEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           const: response.created
 
     ContentDeltaEvent:
       type: object
-      required: [type, delta]
+      required: [event, delta]
       properties:
-        type:
+        event:
           type: string
           enum: [response.output_text.delta, message.delta]
         delta:
@@ -534,9 +607,9 @@ components:
 
     OutputItemAddedEvent:
       type: object
-      required: [type, item]
+      required: [event, item]
       properties:
-        type:
+        event:
           type: string
           const: response.output_item.added
         item:
@@ -575,9 +648,9 @@ components:
 
     OutputItemDoneEvent:
       type: object
-      required: [type, item]
+      required: [event, item]
       properties:
-        type:
+        event:
           type: string
           const: response.output_item.done
         item:
@@ -585,9 +658,9 @@ components:
 
     ResponseCompletedEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           const: response.completed
         usage:
@@ -599,9 +672,9 @@ components:
 
     ResponseFailedEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           const: response.failed
         error:
@@ -610,11 +683,65 @@ components:
             message:
               type: string
 
+    ToolStartedEvent:
+      description: |
+        Emitted when the agent begins executing a tool. This is what the
+        runtime actually sends (`tool.started`); `tool.start` is legacy.
+
+        NOTE: this event carries only a truncated `preview`, never the full
+        tool arguments. Arguments arrive separately, tunneled through
+        `reasoning.available` with `tool_name: "_tool_io"`.
+      type: object
+      required: [event]
+      properties:
+        event:
+          type: string
+          const: tool.started
+        run_id:
+          type: string
+        timestamp:
+          type: number
+          description: Unix epoch seconds.
+        tool:
+          type: string
+          description: Tool identifier.
+        preview:
+          type: string
+          description: Truncated, human-readable preview of the invocation.
+
+    ToolCompletedEvent:
+      description: |
+        Emitted when a tool finishes. This is what the runtime actually sends
+        (`tool.completed`); `tool.result` is legacy.
+
+        NOTE: this event carries no result payload. Results arrive separately,
+        tunneled through `reasoning.available` with `tool_name: "_tool_io"`.
+      type: object
+      required: [event]
+      properties:
+        event:
+          type: string
+          const: tool.completed
+        run_id:
+          type: string
+        timestamp:
+          type: number
+          description: Unix epoch seconds.
+        tool:
+          type: string
+          description: Tool identifier.
+        duration:
+          type: number
+          description: Execution time in seconds, rounded to 3 decimals.
+        error:
+          type: boolean
+          description: True when the tool raised.
+
     ToolStartEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           const: tool.start
         tool:
@@ -634,9 +761,9 @@ components:
 
     ToolProgressEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           enum: [tool.progress, hermes.tool.progress]
         tool:
@@ -648,9 +775,9 @@ components:
 
     ToolResultEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           const: tool.result
         call_id:
@@ -669,20 +796,103 @@ components:
 
     ReasoningEvent:
       type: object
-      required: [type, text]
+      required: [event, text]
       properties:
-        type:
+        event:
           type: string
           enum: [reasoning.available, response.reasoning, hermes.reasoning]
         text:
           type: string
           description: Reasoning/thinking text.
 
+    ApprovalRequestEvent:
+      description: |
+        Emitted when a run with `metadata.human_control: true` hits an approval
+        gate. The run status becomes `waiting_for_approval` and the executor
+        blocks until `POST /v1/runs/{run_id}/approval` resolves it.
+
+        This is what the runtime actually sends (`approval.request`).
+        `approval.required` / `hermes.approval_required` are legacy aliases with
+        a different, tool-centric payload and are not emitted.
+
+        The payload is gate-centric, not tool-centric: there is no `tool` or
+        `input` field. `pattern_key` identifies the gate that fired (for example
+        `execute_code`, `mcp_elicitation`, or a shell warning key) and
+        `command` is the redacted display form of the pending action.
+      type: object
+      required: [event]
+      properties:
+        event:
+          type: string
+          const: approval.request
+        run_id:
+          type: string
+        timestamp:
+          type: number
+          description: Unix epoch seconds.
+        command:
+          type: string
+          description: >-
+            Redacted, human-readable display form of the action awaiting
+            approval. Credentials are stripped before egress.
+        description:
+          type: string
+          description: Human-readable explanation of why approval is required.
+        pattern_key:
+          type: string
+          description: >-
+            Primary gate identifier, e.g. `execute_code`, `mcp_elicitation`, or
+            a shell command warning key.
+        pattern_keys:
+          type: array
+          description: All gate identifiers that matched this action.
+          items:
+            type: string
+        choices:
+          type: array
+          description: >-
+            Allowed values for the `choice` field of the approval request.
+            Normally `["once","session","always","deny"]`; reduced to
+            `["once","deny"]` when `smart_denied` is true.
+          items:
+            type: string
+            enum: [once, session, always, deny]
+        allow_permanent:
+          type: boolean
+          description: False when `always` must not be offered.
+        smart_denied:
+          type: boolean
+          description: >-
+            True when the runtime pre-emptively flagged the action as dangerous.
+
+    ApprovalRespondedEvent:
+      description: |
+        Acknowledgement that a pending approval was resolved. Informational --
+        the run continues (or aborts) on its own after this event.
+      type: object
+      required: [event]
+      properties:
+        event:
+          type: string
+          const: approval.responded
+        run_id:
+          type: string
+        timestamp:
+          type: number
+          description: Unix epoch seconds.
+        choice:
+          type: string
+          enum: [once, session, always, deny]
+          description: The normalized choice that was applied.
+        resolved:
+          type: boolean
+          description: True when the blocked executor was released.
+
     ApprovalRequiredEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           enum: [approval.required, hermes.approval_required]
         run_id:
@@ -699,9 +909,9 @@ components:
 
     UsageEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           const: hermes.usage
         input_tokens:
@@ -717,11 +927,14 @@ components:
 
     RunCompletedEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           const: run.completed
+        output:
+          type: string
+          description: Final assistant output for the run.
         usage:
           $ref: "#/components/schemas/UsageInfo"
         model:
@@ -731,9 +944,9 @@ components:
 
     RunFailedEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           const: run.failed
         error:
@@ -748,11 +961,31 @@ components:
           type: string
           description: Alternative error message field.
 
+    RunCancelledEvent:
+      description: |
+        Terminal event emitted after `POST /v1/runs/{run_id}/stop`. Clients must
+        treat this as stream-terminal; failing to do so leaves the stream
+        looking like a recoverable disconnect and triggers pointless polling of
+        a deliberately stopped run.
+      type: object
+      required: [event]
+      properties:
+        event:
+          type: string
+          const: run.cancelled
+        run_id:
+          type: string
+        timestamp:
+          type: number
+          description: Unix epoch seconds.
+        session_id:
+          type: string
+
     ErrorEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           const: error
         error:
@@ -768,9 +1001,9 @@ components:
 
     DoneEvent:
       type: object
-      required: [type]
+      required: [event]
       properties:
-        type:
+        event:
           type: string
           enum: [done, message_stop]
         session_id:

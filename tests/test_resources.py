@@ -170,17 +170,17 @@ class TestRunsApprovalResource:
     @respx.mock
     def test_submit_approval(self, client: HyverSDK, base_url: str) -> None:
         route = respx.post(f"{base_url}/v1/runs/run-xyz/approval").mock(return_value=httpx.Response(200, json={}))
-        client.runs_approval.submit(run_id="run-xyz", approved=True)
+        client.runs_approval.submit(run_id="run-xyz", choice="once")
         assert route.called
         body = json.loads(route.calls[0].request.content)
-        assert body["approved"] is True
+        assert body["choice"] == "once"
 
     @respx.mock
     def test_reject_approval(self, client: HyverSDK, base_url: str) -> None:
         route = respx.post(f"{base_url}/v1/runs/run-xyz/approval").mock(return_value=httpx.Response(200, json={}))
-        client.runs_approval.submit(run_id="run-xyz", approved=False)
+        client.runs_approval.submit(run_id="run-xyz", choice="deny")
         body = json.loads(route.calls[0].request.content)
-        assert body["approved"] is False
+        assert body["choice"] == "deny"
 
 
 class TestRequestMetadata:
