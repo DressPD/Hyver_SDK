@@ -49,6 +49,8 @@ _SSEEventUnion = Annotated[
     ApprovalRequestEvent | ApprovalRequiredEvent | ApprovalRespondedEvent | ContentDeltaEvent | DoneEvent | ErrorEvent | OutputItemAddedEvent | OutputItemDoneEvent | ReasoningEvent | ResponseCompletedEvent | ResponseCreatedEvent | ResponseFailedEvent | RunCancelledEvent | RunCompletedEvent | RunFailedEvent | ToolCompletedEvent | ToolProgressEvent | ToolResultEvent | ToolStartEvent | ToolStartedEvent | UsageEvent,
     Field(discriminator="event"),
 ]
+_RawEvent = dict[str, object]
+_SSEEvent = _SSEEventUnion | _RawEvent
 
 
 class RunsEventsResource(SyncAPIResource):
@@ -68,7 +70,7 @@ class RunsEventsResource(SyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = not_given,
-    ) -> Stream[_SSEEventUnion]:
+    ) -> Stream[_SSEEvent]:
         """Opens a Server-Sent Events stream for the specified run. Events include
         content deltas, tool executions, reasoning steps, approval requests,
         usage statistics, and completion/failure signals."""
@@ -104,7 +106,7 @@ class AsyncRunsEventsResource(AsyncAPIResource):
         extra_query: Query | None = None,
         extra_body: Body | None = None,
         timeout: float | httpx.Timeout | None | NotGiven = not_given,
-    ) -> AsyncStream[_SSEEventUnion]:
+    ) -> AsyncStream[_SSEEvent]:
         """Opens a Server-Sent Events stream for the specified run. Events include
         content deltas, tool executions, reasoning steps, approval requests,
         usage statistics, and completion/failure signals."""

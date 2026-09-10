@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import httpx
+import pytest
 import respx
 
 from hyver import HyverSDK
@@ -181,6 +182,27 @@ class TestRunsApprovalResource:
         client.runs_approval.submit(run_id="run-xyz", choice="deny")
         body = json.loads(route.calls[0].request.content)
         assert body["choice"] == "deny"
+
+    @respx.mock
+    def test_deprecated_approved_maps_to_choice(self, client: HyverSDK, base_url: str) -> None:
+        route = respx.post(f"{base_url}/v1/runs/run-xyz/approval").mock(return_value=httpx.Response(200, json={}))
+        with pytest.warns(DeprecationWarning, match="approved"):
+            client.runs_approval.submit(run_id="run-xyz", approved=True)
+        body = json.loads(route.calls[0].request.content)
+        assert body["choice"] == "once"
+        assert "approved" not in body
+
+    @respx.mock
+    def test_deprecated_rejected_maps_to_deny(self, client: HyverSDK, base_url: str) -> None:
+        route = respx.post(f"{base_url}/v1/runs/run-xyz/approval").mock(return_value=httpx.Response(200, json={}))
+        with pytest.warns(DeprecationWarning, match="approved"):
+            client.runs_approval.submit(run_id="run-xyz", approved=False)
+        body = json.loads(route.calls[0].request.content)
+        assert body["choice"] == "deny"
+
+    def test_choice_and_approved_are_mutually_exclusive(self, client: HyverSDK) -> None:
+        with pytest.raises(TypeError, match="not both"):
+            client.runs_approval.submit(run_id="run-xyz", choice="once", approved=True)
 
 
 class TestRequestMetadata:

@@ -12,6 +12,9 @@ import json
 from typing import AsyncIterator, Generic, Iterator, Optional, TypeVar
 
 import httpx
+import pydantic
+
+from ._exceptions import APIResponseValidationError
 
 _T = TypeVar("_T")
 
@@ -79,6 +82,20 @@ class _SSEDecoder:
         return None
 
 
+def _process_event_data(*, data: object, cast_to: type, response: httpx.Response, client: object) -> object:
+    try:
+        return client._process_response_data(  # type: ignore[attr-defined]
+            data=data, cast_to=cast_to, response=response
+        )
+    except APIResponseValidationError as exc:
+        cause = exc.__cause__
+        if not isinstance(cause, pydantic.ValidationError) or not any(
+            error["type"] == "union_tag_invalid" for error in cause.errors()
+        ):
+            raise
+        return data
+
+
 class Stream(Generic[_T]):
     def __init__(self, *, cast_to: type, response: httpx.Response, client: object) -> None:
         self._cast_to = cast_to
@@ -94,17 +111,19 @@ class Stream(Generic[_T]):
                     continue
                 if sse.data.strip() == "[DONE]":
                     break
-                yield self._client._process_response_data(  # type: ignore[attr-defined]
+                yield _process_event_data(  # type: ignore[misc]
                     data=self._normalize_event_data(sse.json()),
                     cast_to=self._cast_to,
                     response=self._response,
+                    client=self._client,
                 )
             sse = self._decoder.flush()
             if sse is not None and sse.data.strip() not in ("", "[DONE]"):
-                yield self._client._process_response_data(  # type: ignore[attr-defined]
+                yield _process_event_data(  # type: ignore[misc]
                     data=self._normalize_event_data(sse.json()),
                     cast_to=self._cast_to,
                     response=self._response,
+                    client=self._client,
                 )
         finally:
             self._response.close()
@@ -141,17 +160,19 @@ class AsyncStream(Generic[_T]):
                     continue
                 if sse.data.strip() == "[DONE]":
                     break
-                yield self._client._process_response_data(  # type: ignore[attr-defined]
+                yield _process_event_data(  # type: ignore[misc]
                     data=Stream._normalize_event_data(sse.json()),
                     cast_to=self._cast_to,
                     response=self._response,
+                    client=self._client,
                 )
             sse = self._decoder.flush()
             if sse is not None and sse.data.strip() not in ("", "[DONE]"):
-                yield self._client._process_response_data(  # type: ignore[attr-defined]
+                yield _process_event_data(  # type: ignore[misc]
                     data=Stream._normalize_event_data(sse.json()),
                     cast_to=self._cast_to,
                     response=self._response,
+                    client=self._client,
                 )
         finally:
             await self._response.aclose()

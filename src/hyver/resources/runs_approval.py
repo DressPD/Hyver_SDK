@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import date, datetime  # noqa: F401
 from decimal import Decimal  # noqa: F401
 from functools import cached_property
+import warnings
 from typing import Literal
 from urllib.parse import quote
 
@@ -37,7 +38,8 @@ class RunsApprovalResource(SyncAPIResource):
         self,
         *,
         run_id: str,
-        choice: Literal["once", "session", "always", "deny", "approve", "approved", "allow"],
+        choice: Literal["once", "session", "always", "deny", "approve", "approved", "allow"] | NotGiven = not_given,
+        approved: bool | NotGiven = not_given,
         all: bool | NotGiven = not_given,
         resolve_all: bool | NotGiven = not_given,
         extra_headers: Headers | None = None,
@@ -47,6 +49,15 @@ class RunsApprovalResource(SyncAPIResource):
     ) -> object:
         """Approves or rejects a pending action during a run that has
         human-in-the-loop control enabled."""
+        if choice is not_given:
+            if not isinstance(approved, bool):
+                raise TypeError("Either `choice` or deprecated `approved` must be provided")
+            warnings.warn("`approved` is deprecated; use `choice`", DeprecationWarning, stacklevel=2)
+            choice = "once" if approved else "deny"
+        elif approved is not_given:
+            pass
+        else:
+            raise TypeError("Pass either `choice` or deprecated `approved`, not both")
         _body = {
             "choice": choice,
             "all": all,
@@ -79,7 +90,8 @@ class AsyncRunsApprovalResource(AsyncAPIResource):
         self,
         *,
         run_id: str,
-        choice: Literal["once", "session", "always", "deny", "approve", "approved", "allow"],
+        choice: Literal["once", "session", "always", "deny", "approve", "approved", "allow"] | NotGiven = not_given,
+        approved: bool | NotGiven = not_given,
         all: bool | NotGiven = not_given,
         resolve_all: bool | NotGiven = not_given,
         extra_headers: Headers | None = None,
@@ -89,6 +101,15 @@ class AsyncRunsApprovalResource(AsyncAPIResource):
     ) -> object:
         """Approves or rejects a pending action during a run that has
         human-in-the-loop control enabled."""
+        if choice is not_given:
+            if not isinstance(approved, bool):
+                raise TypeError("Either `choice` or deprecated `approved` must be provided")
+            warnings.warn("`approved` is deprecated; use `choice`", DeprecationWarning, stacklevel=2)
+            choice = "once" if approved else "deny"
+        elif approved is not_given:
+            pass
+        else:
+            raise TypeError("Pass either `choice` or deprecated `approved`, not both")
         _body = {
             "choice": choice,
             "all": all,
