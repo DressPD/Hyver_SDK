@@ -123,6 +123,15 @@ class TestAsyncRunsApprovalResource:
         body = json.loads(route.calls[0].request.content)
         assert body["choice"] == "deny"
 
+    @respx.mock
+    async def test_deprecated_approved_maps_to_choice(self, async_client: AsyncHyverSDK, base_url: str) -> None:
+        route = respx.post(f"{base_url}/v1/runs/run-a/approval").mock(return_value=httpx.Response(200, json={}))
+        with pytest.warns(DeprecationWarning, match="approved"):
+            await async_client.runs_approval.submit(run_id="run-a", approved=True)
+        body = json.loads(route.calls[0].request.content)
+        assert body["choice"] == "once"
+        assert "approved" not in body
+
 
 class TestAsyncErrorMapping:
     ERROR_MAP = [

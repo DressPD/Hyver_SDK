@@ -254,6 +254,32 @@ def patch_streaming_py() -> None:
 
     _patch(
         path,
+        "import httpx\n",
+        "import httpx\nimport pydantic\n\nfrom ._exceptions import APIResponseValidationError\n",
+        "Fix 3a0: imports for unknown event fallback",
+    )
+
+    _patch(
+        path,
+        "_T = TypeVar(\"_T\")\n",
+        "_T = TypeVar(\"_T\")\n\n\n"
+        "def _process_event_data(*, data: object, cast_to: type, response: httpx.Response, client: object) -> object:\n"
+        "    try:\n"
+        "        return client._process_response_data(  # type: ignore[attr-defined]\n"
+        "            data=data, cast_to=cast_to, response=response\n"
+        "        )\n"
+        "    except APIResponseValidationError as exc:\n"
+        "        cause = exc.__cause__\n"
+        "        if not isinstance(cause, pydantic.ValidationError) or not any(\n"
+        "            error[\"type\"] == \"union_tag_invalid\" for error in cause.errors()\n"
+        "        ):\n"
+        "            raise\n"
+        "        return data\n",
+        "Fix 3a1: preserve unknown additive stream events",
+    )
+
+    _patch(
+        path,
         "    def decode(self, line: str) -> Optional[ServerSentEvent]:\n"
         "        if not line:  # dispatch on blank line\n",
         "    def flush(self) -> Optional[ServerSentEvent]:\n"
@@ -292,17 +318,19 @@ def patch_streaming_py() -> None:
         "                    continue\n"
         "                if sse.data.strip() == \"[DONE]\":\n"
         "                    break\n"
-        "                yield self._client._process_response_data(  # type: ignore[attr-defined]\n"
+        "                yield _process_event_data(  # type: ignore[misc]\n"
         "                    data=self._normalize_event_data(sse.json()),\n"
         "                    cast_to=self._cast_to,\n"
         "                    response=self._response,\n"
+        "                    client=self._client,\n"
         "                )\n"
         "            sse = self._decoder.flush()\n"
         "            if sse is not None and sse.data.strip() not in (\"\", \"[DONE]\"):\n"
-        "                yield self._client._process_response_data(  # type: ignore[attr-defined]\n"
+        "                yield _process_event_data(  # type: ignore[misc]\n"
         "                    data=self._normalize_event_data(sse.json()),\n"
         "                    cast_to=self._cast_to,\n"
         "                    response=self._response,\n"
+        "                    client=self._client,\n"
         "                )\n"
         "        finally:\n"
         "            self._response.close()\n",
@@ -324,14 +352,16 @@ def patch_streaming_py() -> None:
 
     _patch(
         path,
-        "    def __enter__(self) -> Stream[_T]:\n",
-"        @staticmethod\n"
-        "        def _normalize_event_data(data: object) -> object:\n"
+        "    def __exit__(self, *args: object) -> None:\n"
+        "        self.close()\n",
+        "    def __exit__(self, *args: object) -> None:\n"
+        "        self.close()\n\n"
+        "    @staticmethod\n"
+        "    def _normalize_event_data(data: object) -> object:\n"
         '        """Normalize older servers that use \'type\' to the canonical \'event\' field."""\n'
         "        if isinstance(data, dict) and \"type\" in data and \"event\" not in data:\n"
         "            data[\"event\"] = data.pop(\"type\")\n"
-        "        return data\n\n"
-        "    def __enter__(self) -> Stream[_T]:\n",
+        "        return data\n",
         "Fix 3c2: Stream._normalize_event_data for server event→type mapping",
     )
 
@@ -355,17 +385,19 @@ def patch_streaming_py() -> None:
         "                    continue\n"
         "                if sse.data.strip() == \"[DONE]\":\n"
         "                    break\n"
-        "                yield self._client._process_response_data(  # type: ignore[attr-defined]\n"
+        "                yield _process_event_data(  # type: ignore[misc]\n"
         "                    data=Stream._normalize_event_data(sse.json()),\n"
         "                    cast_to=self._cast_to,\n"
         "                    response=self._response,\n"
+        "                    client=self._client,\n"
         "                )\n"
         "            sse = self._decoder.flush()\n"
         "            if sse is not None and sse.data.strip() not in (\"\", \"[DONE]\"):\n"
-        "                yield self._client._process_response_data(  # type: ignore[attr-defined]\n"
+        "                yield _process_event_data(  # type: ignore[misc]\n"
         "                    data=Stream._normalize_event_data(sse.json()),\n"
         "                    cast_to=self._cast_to,\n"
         "                    response=self._response,\n"
+        "                    client=self._client,\n"
         "                )\n"
         "        finally:\n"
         "            await self._response.aclose()\n",

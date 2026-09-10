@@ -8,7 +8,6 @@ install:
 generate:
 	uv run stainful generate --spec openapi.yaml --config stainless.yml --out src
 	uv run python scripts/post_generate.py
-	uv run python scripts/post_generate.py
 	# Modernize + normalize the generated output so it passes the lint gate
 	# (PEP 585/604 annotations, import sorting, unused-import pruning).
 	uv run ruff check --fix --unsafe-fixes src/

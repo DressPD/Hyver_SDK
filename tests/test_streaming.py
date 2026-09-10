@@ -5,9 +5,11 @@ from __future__ import annotations
 from unittest.mock import MagicMock
 
 import httpx
+import pytest
 import respx
 
 from hyver import AsyncHyverSDK, HyverSDK
+from hyver._core._exceptions import APIResponseValidationError
 from hyver._core._streaming import Stream, _SSEDecoder
 from hyver.types import (
     ContentDeltaEvent,
@@ -37,6 +39,15 @@ SSE_TOOL_STREAM = (
     'data: {"event":"response.output_text.delta","delta":"Result"}\n\n'
     "data: [DONE]\n\n"
 )
+
+SSE_STREAM_WITH_UNKNOWN_EVENT = (
+    'data: {"event":"response.created"}\n\n'
+    'data: {"type":"RUN_STARTED","thread_id":"thread-1"}\n\n'
+    'data: {"event":"response.output_text.delta","delta":"still running"}\n\n'
+    "data: [DONE]\n\n"
+)
+
+SSE_STREAM_WITH_INVALID_KNOWN_EVENT = 'data: {"event":"response.output_text.delta"}\n\n'
 
 
 class TestSyncRunsEventsStream:
@@ -69,6 +80,31 @@ class TestSyncRunsEventsStream:
         assert events[1].tool == "brave"
 
     @respx.mock
+    def test_unknown_event_does_not_terminate_stream(self, client: HyverSDK, base_url: str) -> None:
+        respx.get(f"{base_url}/v1/runs/run-unknown/events").mock(
+            return_value=httpx.Response(
+                200, text=SSE_STREAM_WITH_UNKNOWN_EVENT, headers={"content-type": "text/event-stream"}
+            )
+        )
+
+        events = list(client.runs_events.stream(run_id="run-unknown"))
+
+        assert isinstance(events[0], ResponseCreatedEvent)
+        assert events[1] == {"event": "RUN_STARTED", "thread_id": "thread-1"}
+        assert isinstance(events[2], ContentDeltaEvent)
+
+    @respx.mock
+    def test_invalid_known_event_still_raises(self, client: HyverSDK, base_url: str) -> None:
+        respx.get(f"{base_url}/v1/runs/run-invalid/events").mock(
+            return_value=httpx.Response(
+                200, text=SSE_STREAM_WITH_INVALID_KNOWN_EVENT, headers={"content-type": "text/event-stream"}
+            )
+        )
+
+        with pytest.raises(APIResponseValidationError):
+            list(client.runs_events.stream(run_id="run-invalid"))
+
+    @respx.mock
     def test_stream_as_context_manager(self, client: HyverSDK, base_url: str) -> None:
         respx.get(f"{base_url}/v1/runs/run-3/events").mock(
             return_value=httpx.Response(200, text=SSE_CONTENT_STREAM, headers={"content-type": "text/event-stream"})
@@ -98,6 +134,20 @@ class TestAsyncRunsEventsStream:
         assert len(events) == 4
         assert isinstance(events[1], ContentDeltaEvent)
         assert events[1].delta == "Hello"
+
+    @respx.mock
+    async def test_unknown_event_does_not_terminate_stream(self, async_client: AsyncHyverSDK, base_url: str) -> None:
+        respx.get(f"{base_url}/v1/runs/run-unknown/events").mock(
+            return_value=httpx.Response(
+                200, text=SSE_STREAM_WITH_UNKNOWN_EVENT, headers={"content-type": "text/event-stream"}
+            )
+        )
+        stream = await async_client.runs_events.stream(run_id="run-unknown")
+
+        events = [event async for event in stream]
+
+        assert events[1] == {"event": "RUN_STARTED", "thread_id": "thread-1"}
+        assert isinstance(events[2], ContentDeltaEvent)
 
     @respx.mock
     async def test_stream_as_context_manager(self, async_client: AsyncHyverSDK, base_url: str) -> None:

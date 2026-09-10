@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from importlib.resources import files
+
 import httpx
 import respx
 
@@ -17,6 +19,9 @@ class TestVersion:
 
     def test_version_in_all(self) -> None:
         assert "__version__" in hyver.__all__
+
+    def test_pep561_marker_is_packaged(self) -> None:
+        assert files("hyver").joinpath("py.typed").is_file()
 
 
 class TestUserAgent:
